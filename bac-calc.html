@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>BAC Calculator | Drankspel Hub</title>
+    <style>
+      :root{
+        --bg:#216225;
+        --panel:#2e7a34;
+        --text:#fff7ff;
+        --muted:#ffe3f4;
+        --accent:#fba9e0;
+        --field:#1f5b25;
+      }
+      *{box-sizing:border-box}
+      body{
+        margin:0;
+        font-family:"Trebuchet MS","Segoe UI",Tahoma,Arial,sans-serif;
+        color:var(--text);
+        background:
+          radial-gradient(900px 550px at 10% 0%, rgba(251,169,224,.36), transparent 60%),
+          radial-gradient(1000px 600px at 90% 30%, rgba(255,255,255,.12), transparent 65%),
+          var(--bg);
+        min-height:100vh;
+      }
+      .wrap{
+        max-width:980px;
+        margin:0 auto;
+        padding:24px 16px 36px;
+      }
+      .hero{
+        background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+        border:2px solid rgba(255,255,255,.25);
+        border-radius:22px;
+        padding:22px;
+        box-shadow:0 16px 32px rgba(0,0,0,.24);
+      }
+      h1{
+        margin:0;
+        font-size:clamp(28px,4.6vw,46px);
+        line-height:1;
+      }
+      .subtitle{
+        margin:10px 0 0;
+        color:var(--muted);
+        font-weight:700;
+      }
+      .top-actions{
+        margin-top:16px;
+      }
+      .btn{
+        display:inline-block;
+        text-decoration:none;
+        color:#1f1f1f;
+        font-weight:900;
+        background:var(--accent);
+        border:2px solid rgba(255,255,255,.6);
+        border-radius:14px;
+        padding:10px 14px;
+        cursor:pointer;
+      }
+      .btn:hover{filter:brightness(1.04)}
+      .grid{
+        margin-top:16px;
+        display:grid;
+        gap:14px;
+        grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+      }
+      .card{
+        background:rgba(255,255,255,.14);
+        border:2px solid rgba(255,255,255,.3);
+        border-radius:18px;
+        padding:14px;
+      }
+      .card h2{
+        margin:0 0 10px;
+        font-size:21px;
+      }
+      .card p{
+        margin:0 0 12px;
+        color:var(--muted);
+        font-size:14px;
+      }
+      .beer-list{
+        display:grid;
+        gap:10px;
+      }
+      .beer-row{
+        display:grid;
+        gap:8px;
+        grid-template-columns:1fr 1fr auto;
+        align-items:end;
+      }
+      .field{
+        display:flex;
+        flex-direction:column;
+        gap:5px;
+      }
+      label{
+        font-size:13px;
+        color:var(--muted);
+        font-weight:700;
+      }
+      input, select{
+        width:100%;
+        border:2px solid rgba(255,255,255,.35);
+        border-radius:10px;
+        background:var(--field);
+        color:var(--text);
+        padding:10px;
+        font-size:16px;
+      }
+      input::placeholder{color:rgba(255,247,255,.7)}
+      .mini-btn{
+        border:2px solid rgba(255,255,255,.35);
+        border-radius:10px;
+        background:#7f2338;
+        color:#fff;
+        font-weight:900;
+        padding:10px 12px;
+        cursor:pointer;
+      }
+      .mini-btn:hover{filter:brightness(1.07)}
+      .actions{
+        margin-top:10px;
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+      }
+      .result-box{
+        margin-top:12px;
+        background:rgba(0,0,0,.2);
+        border:2px solid rgba(255,255,255,.25);
+        border-radius:14px;
+        padding:12px;
+      }
+      .result-line{
+        margin:0 0 8px;
+        font-weight:700;
+      }
+      .result-line:last-child{margin-bottom:0}
+      .small-note{
+        margin-top:8px;
+        color:var(--muted);
+        font-size:13px;
+      }
+      @media (max-width:680px){
+        .beer-row{
+          grid-template-columns:1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="hero">
+        <h1>BAC Calculator</h1>
+        <p class="subtitle">Schat je totale alcohol en BAC op basis van je invoer.</p>
+
+        <div class="top-actions">
+          <a class="btn" href="home.html">Terug naar home</a>
+        </div>
+
+        <div class="grid">
+          <article class="card">
+            <h2>1. Alcohol totaal</h2>
+            <p>Vul per drankje de hoeveelheid en het alcoholpercentage in.</p>
+
+            <div id="beerList" class="beer-list"></div>
+
+            <div class="actions">
+              <button id="addBeer" class="btn" type="button">+ Biertje toevoegen</button>
+            </div>
+
+            <div class="result-box">
+              <p class="result-line">Totaal pure alcohol: <span id="totalAlcohol">0.00</span> ml</p>
+              <p class="result-line">Normale biertjes (totaal / 16.5): <span id="normalBeers">0.00</span></p>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2>2. BAC schatting</h2>
+            <p>Gebruik je totaal alcohol uit stap 1 en vul je gegevens in.</p>
+
+            <div class="field">
+              <label for="sex">Geslacht</label>
+              <select id="sex">
+                <option value="man">Man</option>
+                <option value="vrouw">Vrouw</option>
+              </select>
+            </div>
+
+            <div class="field" style="margin-top:10px;">
+              <label for="weight">Gewicht (kg)</label>
+              <input id="weight" type="number" min="1" step="0.1" placeholder="Bijv. 75" />
+            </div>
+
+            <div class="field" style="margin-top:10px;">
+              <label for="hours">Tijd sinds eerste biertje (uren)</label>
+              <input id="hours" type="number" min="0" step="0.1" placeholder="Bijv. 3" />
+            </div>
+
+            <div class="result-box" style="margin-top:14px;">
+              <p class="result-line">BAC (((((A x 0.8) x 10) / (P x R)) / 10) - (T x 0.10)): <span id="bacValue">0.000</span></p>
+              <p class="small-note">A = totaal pure alcohol (ml), P = gewicht, R = 0.68 (man) of 0.55 (vrouw), T = tijd sinds eerste biertje.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <template id="beerRowTemplate">
+      <div class="beer-row">
+        <div class="field">
+          <label>Hoeveelheid (ml)</label>
+          <input class="beer-ml" type="number" min="0" step="0.1" placeholder="Bijv. 330" />
+        </div>
+        <div class="field">
+          <label>Alcohol %</label>
+          <input class="beer-percent" type="number" min="0" step="0.1" placeholder="Bijv. 5" />
+        </div>
+        <button class="mini-btn remove-beer" type="button">Verwijder</button>
+      </div>
+    </template>
+
+    <script>
+      const beerList = document.getElementById("beerList");
+      const addBeerButton = document.getElementById("addBeer");
+      const totalAlcoholEl = document.getElementById("totalAlcohol");
+      const normalBeersEl = document.getElementById("normalBeers");
+      const sexEl = document.getElementById("sex");
+      const weightEl = document.getElementById("weight");
+      const hoursEl = document.getElementById("hours");
+      const bacValueEl = document.getElementById("bacValue");
+      const beerRowTemplate = document.getElementById("beerRowTemplate");
+
+      function parseLocalNumber(value) {
+        if (!value) {
+          return 0;
+        }
+        return Number(String(value).replace(",", ".")) || 0;
+      }
+
+      function addBeerRow(defaultMl = "", defaultPercent = "") {
+        const row = beerRowTemplate.content.firstElementChild.cloneNode(true);
+        const mlInput = row.querySelector(".beer-ml");
+        const percentInput = row.querySelector(".beer-percent");
+        const removeButton = row.querySelector(".remove-beer");
+
+        mlInput.value = defaultMl;
+        percentInput.value = defaultPercent;
+
+        mlInput.addEventListener("input", calculateAll);
+        percentInput.addEventListener("input", calculateAll);
+
+        removeButton.addEventListener("click", () => {
+          row.remove();
+          calculateAll();
+        });
+
+        beerList.appendChild(row);
+      }
+
+      function calculateAll() {
+        let totalAlcohol = 0;
+        const rows = beerList.querySelectorAll(".beer-row");
+
+        rows.forEach((row) => {
+          const ml = parseLocalNumber(row.querySelector(".beer-ml").value);
+          const percent = parseLocalNumber(row.querySelector(".beer-percent").value);
+          const alcoholFromBeer = ml * (percent / 100);
+          totalAlcohol += alcoholFromBeer;
+        });
+
+        const normalBeers = totalAlcohol / 16.5;
+        totalAlcoholEl.textContent = totalAlcohol.toFixed(2);
+        normalBeersEl.textContent = normalBeers.toFixed(2);
+
+        const r = sexEl.value === "vrouw" ? 0.55 : 0.68;
+        const p = parseLocalNumber(weightEl.value);
+        const t = parseLocalNumber(hoursEl.value);
+
+        let bac = 0;
+        if (p > 0) {
+          bac = (((((totalAlcohol * 0.8) * 10) / (p * r)) / 10) - (t * 0.10));
+        }
+        if (bac < 0) {
+          bac = 0;
+        }
+
+        bacValueEl.textContent = bac.toFixed(3);
+      }
+
+      addBeerButton.addEventListener("click", () => {
+        addBeerRow();
+      });
+
+      sexEl.addEventListener("change", calculateAll);
+      weightEl.addEventListener("input", calculateAll);
+      hoursEl.addEventListener("input", calculateAll);
+
+      addBeerRow(330, 5);
+      calculateAll();
+    </script>
+  </body>
+</html>
