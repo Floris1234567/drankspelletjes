@@ -1,0 +1,1680 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Bussen</title>
+    <style>
+      :root{
+        --bg:#216225;
+        --panel:#2e7a34;
+        --text:#fff7ff;
+        --muted:#ffe3f4;
+        --accent:#fba9e0;
+        --shadow: rgba(0,0,0,.25);
+      }
+      *{box-sizing:border-box}
+      body{
+        margin:0;
+        font-family:"Trebuchet MS","Segoe UI",Tahoma,Arial,sans-serif;
+        background:
+          radial-gradient(900px 550px at 10% 0%, rgba(251,169,224,.35), transparent 62%),
+          radial-gradient(1000px 600px at 90% 30%, rgba(255,255,255,.12), transparent 64%),
+          var(--bg);
+        color:var(--text);
+      }
+      .wrap{max-width:1320px;margin:0 auto;padding:16px;}
+      .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px;}
+      .panel{
+        background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+        border:2px solid rgba(255,255,255,.25);
+        border-radius:18px;
+        padding:12px;
+        box-shadow:0 12px 26px var(--shadow);
+      }
+      .layout{display:grid;grid-template-columns:minmax(640px,1fr) 380px;gap:10px;}
+      @media (max-width:1080px){.layout{grid-template-columns:1fr}}
+
+      .small{color:var(--muted);font-size:13px}
+      h1{margin:0;font-size:28px}
+      h2{margin:0 0 6px 0}
+      button,a.btn{
+        border:2px solid rgba(255,255,255,.3);
+        background:rgba(251,169,224,.24);
+        color:var(--text);
+        font-weight:900;
+        border-radius:12px;
+        padding:8px 11px;
+        cursor:pointer;
+        text-decoration:none;
+      }
+      button:disabled{opacity:.6;cursor:default}
+      .controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+      .gridWrap{overflow:auto;max-height:70vh}
+
+      .players{display:flex;flex-direction:column;gap:8px}
+      .player{
+        border:2px solid rgba(255,255,255,.18);
+        border-radius:12px;
+        padding:10px;
+        background:rgba(255,255,255,.08);
+      }
+      .player.current{
+        border-color:rgba(251,169,224,.9);
+        background:rgba(251,169,224,.2);
+      }
+      .playerName{font-weight:900;margin-bottom:6px}
+      .metaRow{display:flex;gap:10px;flex-wrap:wrap}
+      .pill{
+        background:rgba(0,0,0,.18);
+        border:2px solid rgba(255,255,255,.16);
+        padding:6px 9px;
+        border-radius:999px;
+        font-weight:900;
+        font-size:13px;
+      }
+
+      .cardFace{
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        height:100%;
+        gap:4px;
+        border-radius:10px;
+        border:2px solid rgba(255,255,255,.22);
+        background:rgba(255,255,255,.1);
+      }
+      .cardFace.down{
+        color:rgba(255,255,255,.9);
+        background:
+          repeating-linear-gradient(45deg, rgba(255,255,255,.08) 0 10px, rgba(255,255,255,.03) 10px 18px),
+          rgba(0,0,0,.12);
+      }
+      .cardRank{font-weight:1000}
+      .cardSuit{font-size:20px;line-height:1}
+      .cardRow{
+        display:flex;
+        gap:6px;
+        flex-wrap:wrap;
+        margin-top:8px;
+      }
+
+      .boomGrid{
+        display:grid;
+        grid-template-columns:repeat(5, 52px);
+        grid-template-rows:repeat(6, 62px);
+        gap:4px;
+      }
+      .boomCell{
+        border-radius:12px;
+      }
+      .boomEmpty{
+        border:2px dashed rgba(255,255,255,.18);
+        background:rgba(0,0,0,.06);
+      }
+      .boomCellBtn{
+        width:100%;
+        height:100%;
+        border:0;
+        padding:0;
+        background:transparent;
+      }
+
+      .busGrid{
+        display:grid;
+        grid-template-columns:repeat(2, 110px);
+        gap:10px;
+        justify-content:start;
+        align-content:start;
+      }
+      .busCol{
+        display:grid;
+        grid-auto-rows:70px;
+        gap:6px;
+      }
+      .busRowHeader{
+        height:0;
+      }
+
+      .overlay{
+        position:fixed;inset:0;background:rgba(0,0,0,.55);
+        display:flex;align-items:center;justify-content:center;padding:16px;z-index:40;
+      }
+      .dialog{
+        width:min(820px, 100%);
+        background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+        border:1px solid rgba(255,255,255,.10);
+        border-radius:18px;
+        box-shadow:0 30px 80px rgba(0,0,0,.55);
+        padding:16px;
+      }
+      .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      @media (max-width:720px){.row2{grid-template-columns:1fr}}
+      label{display:block;font-size:13px;color:var(--muted);font-weight:700;margin-bottom:6px}
+      input[type="text"],input[type="range"]{
+        width:100%;
+        padding:10px 12px;border-radius:12px;
+        border:2px solid rgba(255,255,255,.22);
+        background:rgba(0,0,0,.18);color:var(--text);
+        outline:none;
+      }
+      .hint{white-space:pre-wrap;line-height:1.35}
+      .warning{color:rgba(255,221,0,.95)}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <div class="panel" style="flex:1 1 560px;">
+          <h1>Bussen</h1>
+          <div class="small">Ronde 1: 4 vragen per speler. Fase 2: boom (inleveren). Fase 3: bus (hoger/lager raden).</div>
+        </div>
+        <div class="panel" style="flex:0 0 auto;display:flex;gap:10px;align-items:center;">
+          <a class="btn" href="home.html">Naar home</a>
+          <button id="btnRestart" type="button">Nieuwe ronde</button>
+        </div>
+      </div>
+
+      <div class="layout">
+        <div class="panel">
+          <div class="small" id="stageInfo">Stage: -</div>
+          <h2 id="stageTitle">Klaar.</h2>
+          <div class="hint small" id="stageRules"></div>
+
+          <div id="phase1Area" style="display:none;">
+            <div class="cardRow">
+              <div style="min-width:160px">
+                <div class="small">Kaarten speler</div>
+                <div class="cardRow" id="phase1Cards"></div>
+              </div>
+              <div style="min-width:160px">
+                <div class="small">Net getrokken</div>
+                <div class="cardRow" id="lastDrawn"></div>
+              </div>
+            </div>
+            <div style="margin-top:10px" class="small" id="promptText"></div>
+            <div class="controls" id="phase1GuessControls"></div>
+          </div>
+
+          <div id="phase2Area" style="display:none;">
+            <div class="small">Boom: vaste posities</div>
+            <div style="margin-top:8px" class="gridWrap">
+              <div id="boomGrid" class="boomGrid"></div>
+            </div>
+            <div style="margin-top:10px" class="small" id="boomMsg"></div>
+            <div style="margin-top:10px" class="controls" id="boomControls"></div>
+          </div>
+
+          <div id="phase3Area" style="display:none;">
+            <div class="small" id="busMsg"></div>
+            <div style="margin-top:10px" class="small" id="busInfo"></div>
+            <div style="margin-top:12px" class="busGrid" id="busGridWrap"></div>
+            <div class="controls" id="busGuessControls"></div>
+            <div style="margin-top:10px" class="small" id="busError"></div>
+          </div>
+
+        </div>
+
+        <div class="panel">
+          <h2>Spelers</h2>
+          <div class="players" id="playersList"></div>
+          <div style="margin-top:12px" class="small" id="deckInfo">Deck: -</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="overlay" class="overlay" role="dialog" aria-modal="true">
+      <div class="dialog">
+        <h2>Start Bussen</h2>
+        <p class="small hint">Kies 2-10 spelers. De gamepagina gebruikt een deck van 52 kaarten.</p>
+        <div class="row2">
+          <div>
+            <label for="playerCount">Aantal spelers</label>
+            <input id="playerCount" type="range" min="2" max="10" value="4" />
+            <div class="small">Huidig: <span id="playerCountValue">4</span></div>
+          </div>
+          <div>
+            <label>Namen</label>
+            <div class="small">Vul de namen in.</div>
+          </div>
+        </div>
+        <div id="nameFields" style="margin-top:10px"></div>
+        <div class="controls" style="justify-content:flex-end;margin-top:12px">
+          <button id="btnStart" type="button">Start spel</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const GRID_DECK_INFO = { suitKeys: ["hearts","diamonds","clubs","spades"] };
+
+      const SUITS = [
+        { key: "hearts", symbol: "\\u2665", color: "red" },
+        { key: "diamonds", symbol: "\\u2666", color: "red" },
+        { key: "clubs", symbol: "\\u2663", color: "black" },
+        { key: "spades", symbol: "\\u2660", color: "black" }
+      ];
+      // symbol wordt later door JS getekend via escape
+      const RANKS = [
+        { label: "A", value: 1 }, { label: "2", value: 2 }, { label: "3", value: 3 }, { label: "4", value: 4 },
+        { label: "5", value: 5 }, { label: "6", value: 6 }, { label: "7", value: 7 }, { label: "8", value: 8 },
+        { label: "9", value: 9 }, { label: "10", value: 10 }, { label: "J", value: 11 }, { label: "Q", value: 12 }, { label: "K", value: 13 }
+      ];
+
+      const els = {
+        overlay: document.getElementById("overlay"),
+        playerCount: document.getElementById("playerCount"),
+        playerCountValue: document.getElementById("playerCountValue"),
+        nameFields: document.getElementById("nameFields"),
+        btnStart: document.getElementById("btnStart"),
+        btnRestart: document.getElementById("btnRestart"),
+        playersList: document.getElementById("playersList"),
+        stageInfo: document.getElementById("stageInfo"),
+        stageTitle: document.getElementById("stageTitle"),
+        stageRules: document.getElementById("stageRules"),
+        phase1Area: document.getElementById("phase1Area"),
+        phase2Area: document.getElementById("phase2Area"),
+        phase3Area: document.getElementById("phase3Area"),
+        phase1Cards: document.getElementById("phase1Cards"),
+        lastDrawn: document.getElementById("lastDrawn"),
+        promptText: document.getElementById("promptText"),
+        phase1GuessControls: document.getElementById("phase1GuessControls"),
+        boomGrid: document.getElementById("boomGrid"),
+        boomMsg: document.getElementById("boomMsg"),
+        boomControls: document.getElementById("boomControls"),
+        busMsg: document.getElementById("busMsg"),
+        busInfo: document.getElementById("busInfo"),
+        busGridWrap: document.getElementById("busGridWrap"),
+        busGuessControls: document.getElementById("busGuessControls"),
+        busError: document.getElementById("busError"),
+        deckInfo: document.getElementById("deckInfo")
+      };
+
+      const state = {
+        players: [],
+        deck: [],
+        phase: "setup", // phase1 / phase2 / phase3 / done
+        // phase 1
+        qStep: 1, // 1..4
+        activePlayerIdx: 0,
+        // phase 2
+        boom: [],
+        boomRevealIdx: 0,
+        boomClaimed: false,
+        // phase 2 tiebreaker
+        isTiebreaker: false,
+        tiebreakPlayers: [],
+        tiebreakDraws: {},
+        tiebreakCurrentDrawIdx: 0,
+        // phase 3
+        busWinnerIdx: null,
+        busTriggerCard1: null,
+        busTriggerCard2: null,
+        busGrid: [],
+        busPath: [],
+        busOpenCells: new Set(),
+        busRevealedCards: new Set(),
+        busStepIdx: 0,
+        busReachedCheckpoint: false,
+        busCheckpointIdx: 0,
+        busCurrentCard: null,
+        busPendingGuess: null
+      };
+
+      function suitSymbolFromEscape(esc){
+        // esc is like "\u2665" but we store it as string literal "\\u2665"
+        // JS: eval is not desired; instead map a few known ones.
+        const map = {
+          "\\u2665": "♥",
+          "\\u2666": "♦",
+          "\\u2663": "♣",
+          "\\u2660": "♠"
+        };
+        return map[esc] || esc;
+      }
+
+      function cardSig(card){
+        return card.suit + ":" + card.rankValue;
+      }
+
+      function makeDeck(){
+        const deck = [];
+        for(const suit of SUITS){
+          for(const rank of RANKS){
+            deck.push({
+              suit: suit.key,
+              suitSymbol: suitSymbolFromEscape(suit.symbol),
+              color: suit.color,
+              rankLabel: rank.label,
+              rankValue: rank.value,
+              displayRank: rank.label
+            });
+          }
+        }
+        // Fisher-Yates shuffle
+        for(let i = deck.length - 1; i > 0; i--){
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = deck[i]; deck[i] = deck[j]; deck[j] = tmp;
+        }
+        return deck;
+      }
+
+      function nextCard(){
+        return state.deck.length ? state.deck.pop() : null;
+      }
+
+      function deckInfo(){
+        els.deckInfo.textContent = "Deck: " + state.deck.length + " kaarten over";
+      }
+
+      function ensurePhaseAreas(){
+        els.phase1Area.style.display = (state.phase === "phase1") ? "block" : "none";
+        els.phase2Area.style.display = (state.phase === "phase2") ? "block" : "none";
+        els.phase3Area.style.display = (state.phase === "phase3") ? "block" : "none";
+      }
+
+      function setStage(title, rules, info){
+        els.stageTitle.textContent = title;
+        els.stageRules.textContent = rules || "";
+        els.stageInfo.textContent = info || ("Stage: " + state.phase);
+      }
+
+      function renderPlayers(){
+        els.playersList.innerHTML = "";
+        for(let i=0;i<state.players.length;i++){
+          const p = state.players[i];
+          const div = document.createElement("div");
+          div.className = "player" + (i === state.activePlayerIdx ? " current" : "");
+          const label = p.name + (p.eliminated ? " (out)" : "");
+          
+          // Count only non-surrendered cards (for phase 2)
+          let availableCards = 0;
+          if(p.round1Cards){
+            for(const card of p.round1Cards){
+              if(!p.surrendered || !p.surrendered.has(cardSig(card))){
+                availableCards++;
+              }
+            }
+          }
+          
+          div.innerHTML =
+            "<div class='playerName'>" + label + "</div>" +
+            "<div class='metaRow'>" +
+              "<div class='pill'>Slokken: " + p.drinks + "</div>" +
+              "<div class='pill'>Kaarten: " + availableCards + "/4</div>" +
+            "</div>";
+          els.playersList.appendChild(div);
+        }
+      }
+
+      function renderCardTiny(container, card, opts){
+        opts = opts || {};
+        const down = opts.down || false;
+        const el = document.createElement("div");
+        el.style.width = "64px";
+        el.style.height = "62px";
+        const face = document.createElement("div");
+        face.className = "cardFace" + (down ? " down" : "");
+        face.innerHTML = down
+          ? "<div class='cardRank'>?</div>"
+          : "<div class='cardRank'>" + card.rankLabel + "</div><div class='cardSuit'>" + card.suitSymbol + "</div>";
+        el.appendChild(face);
+        container.appendChild(el);
+      }
+
+      function resetToSetup(){
+        state.players = [];
+        state.deck = [];
+        state.phase = "setup";
+        state.qStep = 1;
+        state.activePlayerIdx = 0;
+        state.boom = [];
+        state.boomRevealIdx = 0;
+        state.boomClaimed = false;
+        state.isTiebreaker = false;
+        state.tiebreakPlayers = [];
+        state.tiebreakDraws = {};
+        state.tiebreakCurrentDrawIdx = 0;
+        state.busWinnerIdx = null;
+        state.busTriggerCard1 = null;
+        state.busTriggerCard2 = null;
+        state.busGrid = [];
+        state.busPath = [];
+        state.busOpenCells = new Set();
+        state.busRevealedCards = new Set();
+        state.busStepIdx = 0;
+        state.busReachedCheckpoint = false;
+        state.busCheckpointIdx = 0;
+        state.busCurrentCard = null;
+        state.busPendingGuess = null;
+        els.overlay.style.display = "flex";
+        els.phase1GuessControls.innerHTML = "";
+        els.phase2Area.style.display = "none";
+        els.phase3Area.style.display = "none";
+        els.phase1Area.style.display = "none";
+      }
+
+      function buildNameInputs(count){
+        els.nameFields.innerHTML = "";
+        const defaults = ["Speler A","Speler B","Speler C","Speler D","Speler E","Speler F","Speler G","Speler H","Speler I","Speler J"];
+        for(let i=0;i<count;i++){
+          const row = document.createElement("div");
+          row.style.marginTop = "8px";
+          const label = document.createElement("label");
+          label.textContent = "Naam speler " + (i+1);
+          label.setAttribute("for", "name_" + i);
+          const input = document.createElement("input");
+          input.type = "text";
+          input.id = "name_" + i;
+          input.value = defaults[i] || ("Speler " + (i+1));
+          row.appendChild(label);
+          row.appendChild(input);
+          els.nameFields.appendChild(row);
+        }
+      }
+
+      function readPlayers(count){
+        const out = [];
+        for(let i=0;i<count;i++){
+          const value = (document.getElementById("name_" + i)?.value || "").trim();
+          if(!value) throw new Error("Vul alle namen in.");
+          out.push({
+            name: value,
+            drinks: 0,
+            round1Cards: [],
+            surrendered: new Set()
+          });
+        }
+        return out;
+      }
+
+      function startGame(players){
+        state.players = players;
+        state.deck = makeDeck();
+        state.phase = "phase1";
+        state.qStep = 1;
+        state.activePlayerIdx = 0;
+        state.boom = [];
+        state.boomRevealIdx = 0;
+        state.boomClaimed = false;
+        state.isTiebreaker = false;
+        state.tiebreakPlayers = [];
+        state.tiebreakDraws = {};
+        state.tiebreakCurrentDrawIdx = 0;
+        state.busWinnerIdx = null;
+        state.busTriggerCard1 = null;
+        state.busTriggerCard2 = null;
+        state.busGrid = [];
+        state.busPath = [];
+        state.busOpenCells = new Set();
+        state.busRevealedCards = new Set();
+        state.busStepIdx = 0;
+        state.busReachedCheckpoint = false;
+        state.busCheckpointIdx = 0;
+        state.busCurrentCard = null;
+        state.busPendingGuess = null;
+
+        // reset cards
+        for(const p of state.players){
+          p.round1Cards = [];
+          p.surrendered = new Set();
+        }
+
+        els.overlay.style.display = "none";
+        ensurePhaseAreas();
+        deckInfo();
+        renderPlayers();
+        renderPhase1();
+      }
+
+      function drawCardOrWarn(){
+        const c = nextCard();
+        if(!c){
+          els.promptText.textContent = "Deck is op. (Nog niet geïmplementeerd: nieuw deck.)";
+        }
+        deckInfo();
+        return c;
+      }
+
+      function renderPhase1(){
+        ensurePhaseAreas();
+        els.phase1Area.style.display = "block";
+        els.lastDrawn.innerHTML = "";
+        els.phase1Cards.innerHTML = "";
+        const p = state.players[state.activePlayerIdx];
+
+        // show already drawn cards in the row
+        for(const card of p.round1Cards){
+          renderCardTiny(els.phase1Cards, card, { down: false });
+        }
+        // pad with downs
+        while(p.round1Cards.length < 4){
+          renderCardTiny(els.phase1Cards, { rankLabel: "?", suitSymbol: "?" }, { down: true });
+          p.round1Cards.length; // no-op to keep lint quiet
+          break;
+        }
+
+        setStage(
+          "Fase 1 - Vragen",
+          "Iedere speler krijgt 4 kaarten en beantwoordt 4 vragen. Fout = slok nemen. Bij 'Kwartet' (optioneel) krijgt iedereen +1 slok als je goed zit.",
+          "Speler: " + p.name + " • Vraag: " + state.qStep
+        );
+
+        els.phase1GuessControls.innerHTML = "";
+        els.promptText.textContent = "";
+
+        if(state.qStep === 1){
+          els.promptText.textContent = "Vraag 1: kies `Rood` of `Zwart` voor je eerste kaart.";
+          addGuessButtons([
+            { id:"red", label:"Rood", guess:"red" },
+            { id:"black", label:"Zwart", guess:"black" }
+          ], (guess) => doPhase1GuessColor(guess));
+        } else if(state.qStep === 2){
+          const c1 = p.round1Cards[0];
+          els.promptText.textContent = "Vraag 2: je kaart 1 is " + c1.rankLabel + " " + c1.suitSymbol + ". Is kaart 2 hoger of lager dan kaart 1?";
+          addGuessButtons([
+            { id:"higher", label:"Hoger", guess:"higher" },
+            { id:"lower", label:"Lager", guess:"lower" }
+          ], (guess) => doPhase1GuessHighLow(guess));
+        } else if(state.qStep === 3){
+          const c1 = p.round1Cards[0];
+          const c2 = p.round1Cards[1];
+          const min = Math.min(c1.rankValue, c2.rankValue);
+          const max = Math.max(c1.rankValue, c2.rankValue);
+          els.promptText.textContent = "Vraag 3: kaart 3 moet binnen of buiten (" + min + " - " + max + ") liggen. Binnen = tussen, Buiten = buiten.";
+          addGuessButtons([
+            { id:"inside", label:"Binnen", guess:"inside" },
+            { id:"outside", label:"Buiten", guess:"outside" }
+          ], (guess) => doPhase1GuessInsideOutside(guess));
+        } else if(state.qStep === 4){
+          const c1 = p.round1Cards[0];
+          const c2 = p.round1Cards[1];
+          const c3 = p.round1Cards[2];
+          const suits = [c1.suit, c2.suit, c3.suit];
+          const uniqueSuits = new Set(suits);
+          const allDifferent = uniqueSuits.size === 3;
+          const hasSuit = (suit) => suits.includes(suit);
+
+          els.promptText.textContent = "Vraag 4: heb je het symbool/suit van kaart 4 al wel of niet in je vorige 3 kaarten? (Present=wel, Absent=nee)";
+          els.phase1GuessControls.innerHTML = "";
+          addGuessButtons([
+            { id:"present", label:"Present (wel al)", guess:"present" },
+            { id:"absent", label:"Absent (niet)", guess:"absent" }
+          ], (guess) => doPhase1GuessSuitPresentAbsent(guess));
+
+          if(allDifferent){
+            // Extra kwartet-optie (interpretatie: je gokt dat de suit ontbreekt => alle 4 suits verschillend)
+            const extra = document.createElement("button");
+            extra.type = "button";
+            extra.textContent = "Kwartet (als goed: iedereen +1)";
+            extra.addEventListener("click", () => doPhase1GuessQuartet());
+            els.phase1GuessControls.appendChild(extra);
+          }
+        }
+        renderPlayers();
+      }
+
+      function addGuessButtons(items, onClick){
+        for(const it of items){
+          const b = document.createElement("button");
+          b.type = "button";
+          b.textContent = it.label;
+          b.addEventListener("click", () => onClick(it.guess));
+          els.phase1GuessControls.appendChild(b);
+        }
+      }
+
+      function goNextQuestionOrPlayer(){
+        // Move to next player for the same question
+        state.activePlayerIdx += 1;
+
+        if(state.activePlayerIdx >= state.players.length){
+          // All players finished this question, move to next question
+          state.activePlayerIdx = 0;
+          state.qStep += 1;
+
+          if(state.qStep > 4){
+            // All questions done for all players
+            startPhase2();
+          } else {
+            renderPhase1();
+          }
+        } else {
+          // Next player answers the same question
+          renderPhase1();
+        }
+      }
+
+      function doPhase1GuessColor(guessColor){
+        const p = state.players[state.activePlayerIdx];
+        const drawn = drawCardOrWarn();
+        if(!drawn) return;
+
+        els.lastDrawn.innerHTML = "";
+        renderCardTiny(els.lastDrawn, drawn, { down:false });
+
+        const ok = (guessColor === drawn.color);
+        if(!ok) p.drinks += 1;
+        p.round1Cards = [drawn];
+        els.promptText.textContent = ok ? "Goed! Kaart 1 geplaatst." : "Fout! Je neemt 1 slok.";
+        renderPlayers();
+        deckInfo();
+        
+        // Show feedback with next button
+        els.phase1GuessControls.innerHTML = "";
+        const nextBtn = document.createElement("button");
+        nextBtn.type = "button";
+        nextBtn.textContent = "Volgende";
+        nextBtn.addEventListener("click", () => goNextQuestionOrPlayer());
+        els.phase1GuessControls.appendChild(nextBtn);
+      }
+
+      function doPhase1GuessHighLow(guess){
+        const p = state.players[state.activePlayerIdx];
+        const c1 = p.round1Cards[0];
+        const drawn = drawCardOrWarn();
+        if(!drawn) return;
+        els.lastDrawn.innerHTML = "";
+        renderCardTiny(els.lastDrawn, drawn, { down:false });
+
+        const ok = (guess === "higher") ? (drawn.rankValue > c1.rankValue) : (drawn.rankValue < c1.rankValue);
+        if(!ok) p.drinks += 1;
+        p.round1Cards.push(drawn);
+        
+        els.promptText.textContent = ok ? "Goed!" : "Fout! Je neemt 1 slok.";
+        renderPlayers();
+        deckInfo();
+        
+        // Show feedback with next button
+        els.phase1GuessControls.innerHTML = "";
+        const nextBtn = document.createElement("button");
+        nextBtn.type = "button";
+        nextBtn.textContent = "Volgende";
+        nextBtn.addEventListener("click", () => goNextQuestionOrPlayer());
+        els.phase1GuessControls.appendChild(nextBtn);
+      }
+
+      function doPhase1GuessInsideOutside(guess){
+        const p = state.players[state.activePlayerIdx];
+        const c1 = p.round1Cards[0];
+        const c2 = p.round1Cards[1];
+        const min = Math.min(c1.rankValue, c2.rankValue);
+        const max = Math.max(c1.rankValue, c2.rankValue);
+        const drawn = drawCardOrWarn();
+        if(!drawn) return;
+        els.lastDrawn.innerHTML = "";
+        renderCardTiny(els.lastDrawn, drawn, { down:false });
+
+        const inside = (drawn.rankValue >= min && drawn.rankValue <= max);
+        const ok = (guess === "inside") ? inside : !inside;
+        if(!ok) p.drinks += 1;
+        p.round1Cards.push(drawn);
+        
+        els.promptText.textContent = ok ? "Goed!" : "Fout! Je neemt 1 slok.";
+        renderPlayers();
+        deckInfo();
+        
+        // Show feedback with next button
+        els.phase1GuessControls.innerHTML = "";
+        const nextBtn = document.createElement("button");
+        nextBtn.type = "button";
+        nextBtn.textContent = "Volgende";
+        nextBtn.addEventListener("click", () => goNextQuestionOrPlayer());
+        els.phase1GuessControls.appendChild(nextBtn);
+      }
+
+      function doPhase1GuessSuitPresentAbsent(guess){
+        const p = state.players[state.activePlayerIdx];
+        const suits = p.round1Cards.slice(0,3).map(c => c.suit);
+        const drawn = drawCardOrWarn();
+        if(!drawn) return;
+        els.lastDrawn.innerHTML = "";
+        renderCardTiny(els.lastDrawn, drawn, { down:false });
+
+        const present = suits.includes(drawn.suit);
+        const ok = (guess === "present") ? present : !present;
+        if(!ok) p.drinks += 1;
+        p.round1Cards.push(drawn);
+        els.promptText.textContent = ok ? "Goed! Kaart 4 is gezet." : "Fout! 1 slok.";
+        renderPlayers();
+        deckInfo();
+
+        // Show feedback with next button
+        els.phase1GuessControls.innerHTML = "";
+        const nextBtn = document.createElement("button");
+        nextBtn.type = "button";
+        nextBtn.textContent = "Volgende";
+        nextBtn.addEventListener("click", () => goNextQuestionOrPlayer());
+        els.phase1GuessControls.appendChild(nextBtn);
+      }
+
+      function doPhase1GuessQuartet(){
+        const p = state.players[state.activePlayerIdx];
+        const suits = p.round1Cards.slice(0,3).map(c => c.suit);
+        const uniqueSuits = new Set(suits);
+        if(uniqueSuits.size !== 3){
+          els.promptText.textContent = "Kwartet is alleen beschikbaar als je 3 verschillende suits hebt.";
+          return;
+        }
+        const drawn = drawCardOrWarn();
+        if(!drawn) return;
+        els.lastDrawn.innerHTML = "";
+        renderCardTiny(els.lastDrawn, drawn, { down:false });
+
+        const absent = !suits.includes(drawn.suit);
+        if(!absent){
+          p.drinks += 1;
+          els.promptText.textContent = "Kwartet fout! Je neemt 1 slok.";
+        } else {
+          for(const pl of state.players){
+            pl.drinks += 1;
+          }
+          els.promptText.textContent = "Kwartet goed! Iedereen +1 slok.";
+        }
+        p.round1Cards.push(drawn);
+        renderPlayers();
+        deckInfo();
+        
+        // Show feedback with next button
+        els.phase1GuessControls.innerHTML = "";
+        const nextBtn = document.createElement("button");
+        nextBtn.type = "button";
+        nextBtn.textContent = "Volgende";
+        nextBtn.addEventListener("click", () => goNextQuestionOrPlayer());
+        els.phase1GuessControls.appendChild(nextBtn);
+      }
+
+      // --------------------------
+      // FASE 2 - Boom
+      // --------------------------
+      const BOOM_POSITIONS = [
+        { key:"1c", row:1, col:"c" },
+        { key:"2c", row:2, col:"c" },
+        { key:"3a", row:3, col:"a" },
+        { key:"3b", row:3, col:"b" },
+        { key:"3c", row:3, col:"c" },
+        { key:"3d", row:3, col:"d" },
+        { key:"3e", row:3, col:"e" },
+        { key:"4b", row:4, col:"b" },
+        { key:"4c", row:4, col:"c" },
+        { key:"4d", row:4, col:"d" },
+        { key:"5b", row:5, col:"b" },
+        { key:"5c", row:5, col:"c" },
+        { key:"5d", row:5, col:"d" },
+        { key:"6c", row:6, col:"c" }
+      ];
+      const COL_INDEX = { a:0, b:1, c:2, d:3, e:4 };
+
+      function startPhase2(){
+        state.phase = "phase2";
+        state.boom = [];
+        state.boomRevealIdx = 0;
+        state.boomClaimed = false;
+        ensurePhaseAreas();
+        els.phase2Area.style.display = "block";
+
+        for(const p of state.players){
+          p.surrendered = new Set();
+        }
+
+        // draw one card per boom position
+        const boomCards = [];
+        for(const pos of BOOM_POSITIONS){
+          const c = nextCard();
+          if(!c){
+            // deck ran out, stop gracefully
+            els.boomMsg.textContent = "Deck is op tijdens fase 2. (Nog geen nieuw-deck knop.)";
+            break;
+          }
+          boomCards.push({ pos, card: c, revealed: false, claimedBy: null });
+        }
+        state.boom = boomCards;
+        renderBoomGrid();
+        setStage("Fase 2 - Boom", "Onthul boomkaarten rij voor rij. Als je een overeenkomst hebt uit ronde 1, mag je inleveren.", "Rij: -");
+        els.boomMsg.textContent = "Klik op 'Inleveren' bij een overeenkomst, of ga door met 'Volgende boomkaart'.";
+        renderPlayers();
+        deckInfo();
+        renderBoomReveal();
+      }
+
+      function renderBoomGrid(){
+        els.boomGrid.innerHTML = "";
+        // we render 6x5 grid, but only some cells are used
+        const posSet = new Set(BOOM_POSITIONS.map(p => p.key));
+        for(let row=1; row<=6; row++){
+          for(let ci=0; ci<5; ci++){
+            const colLetter = Object.keys(COL_INDEX).find(k => COL_INDEX[k] === ci);
+            const key = row + colLetter;
+            const cell = document.createElement("div");
+            if(posSet.has(key)){
+              cell.className = "boomCell";
+              cell.dataset.boomKey = key;
+              cell.style.position = "relative";
+              cell.innerHTML = "<button type='button' class='boomCellBtn' aria-label='Boomcel " + key + "'></button>";
+            } else {
+              cell.className = "boomEmpty";
+              cell.style.borderRadius = "12px";
+            }
+            els.boomGrid.appendChild(cell);
+          }
+        }
+      }
+
+      function getBoomByKey(key){
+        return state.boom.find(b => (b.pos.key === key));
+      }
+
+      function renderBoomReveal(){
+        // set revealed cells according to boomRevealIdx
+        const revealedUpTo = state.boomRevealIdx;
+        for(let i=0;i<state.boom.length;i++){
+          state.boom[i].revealed = (i <= revealedUpTo);
+        }
+
+        for(const boomEl of els.boomGrid.querySelectorAll("[data-boom-key]")){
+          const key = boomEl.dataset.boomKey;
+          const boom = getBoomByKey(key);
+          const btn = boomEl.querySelector("button");
+          if(!boom){
+            btn.disabled = true;
+            btn.innerHTML = "";
+            continue;
+          }
+          btn.disabled = (state.phase !== "phase2") || (iAmPastCurrentReveal(boom));
+
+          const isRevealed = (boom.revealed);
+          if(isRevealed){
+            btn.disabled = true;
+            btn.innerHTML = renderCardMarkup(boom.card, false);
+          } else {
+            btn.disabled = true;
+            btn.innerHTML = renderCardMarkup(null, true);
+          }
+        }
+
+        // UI for current reveal
+        const current = state.boom[state.boomRevealIdx];
+        els.boomControls.innerHTML = "";
+        els.boomMsg.textContent = "Onthuld: " + current.pos.key + " (rij " + current.pos.row + ").";
+        state.boomClaimed = false;
+
+        // show claim buttons for each player
+        const claimRow = document.createElement("div");
+        claimRow.className = "controls";
+
+        for(let pi=0; pi<state.players.length; pi++){
+          const p = state.players[pi];
+          // Match by rank only, not by suit
+          const currentRank = current.card.rankValue;
+          const has = p.round1Cards.some(c => c.rankValue === currentRank && !p.surrendered.has(cardSig(c)));
+          const eligible = has && !state.boomClaimed;
+          const b = document.createElement("button");
+          b.type = "button";
+          b.textContent = eligible ? (p.name + " inleveren") : (p.name + " ");
+          b.disabled = !eligible;
+          b.addEventListener("click", () => {
+            // Find the first card with matching rank that hasn't been surrendered
+            const cardToSurrender = p.round1Cards.find(c => c.rankValue === currentRank && !p.surrendered.has(cardSig(c)));
+            if(cardToSurrender){
+              // Mark this exact card as surrendered
+              p.surrendered.add(cardSig(cardToSurrender));
+              state.boomClaimed = true;
+              const give = current.pos.row;
+              
+              // Show distribution dialog
+              showBoomDistributionDialog(p.name, give);
+              renderPlayers();
+              // re-render to avoid multiple "volgende" buttons
+              renderBoomReveal();
+            }
+          });
+          claimRow.appendChild(b);
+        }
+        els.boomControls.appendChild(claimRow);
+
+        renderBoomControlsNext();
+        
+        // Display each player's remaining cards from round 1
+        const playersCardsDiv = document.createElement("div");
+        playersCardsDiv.style.marginTop = "16px";
+        playersCardsDiv.style.padding = "12px";
+        playersCardsDiv.style.background = "rgba(255,255,255,.08)";
+        playersCardsDiv.style.borderRadius = "12px";
+        playersCardsDiv.innerHTML = "<div style='font-size:13px; color:var(--muted); font-weight:700; text-transform:uppercase; margin-bottom:8px'>Kaarten in handen</div>";
+        
+        for(let pi=0; pi<state.players.length; pi++){
+          const p = state.players[pi];
+          const playerCardDiv = document.createElement("div");
+          playerCardDiv.style.fontSize = "12px";
+          playerCardDiv.style.marginBottom = "8px";
+          playerCardDiv.style.padding = "6px 8px";
+          playerCardDiv.style.background = "rgba(0,0,0,.2)";
+          playerCardDiv.style.borderRadius = "8px";
+          playerCardDiv.style.display = "flex";
+          playerCardDiv.style.alignItems = "center";
+          playerCardDiv.style.gap = "8px";
+          
+          const nameSpan = document.createElement("span");
+          nameSpan.textContent = p.name + ":";
+          nameSpan.style.fontWeight = "900";
+          nameSpan.style.minWidth = "80px";
+          playerCardDiv.appendChild(nameSpan);
+          
+          const cardsContainer = document.createElement("div");
+          cardsContainer.style.display = "flex";
+          cardsContainer.style.gap = "4px";
+          cardsContainer.style.flexWrap = "wrap";
+          
+          for(const card of p.round1Cards){
+            const sig = cardSig(card);
+            const surrendered = p.surrendered.has(sig);
+            if(!surrendered){
+              const cardEl = document.createElement("span");
+              cardEl.style.padding = "4px 6px";
+              cardEl.style.background = "rgba(251,169,224,.3)";
+              cardEl.style.border = "1px solid rgba(251,169,224,.6)";
+              cardEl.style.borderRadius = "6px";
+              cardEl.style.fontWeight = "bold";
+              cardEl.textContent = card.rankLabel + card.suitSymbol;
+              cardsContainer.appendChild(cardEl);
+            }
+          }
+          
+          if(cardsContainer.children.length === 0){
+            const emptySpan = document.createElement("span");
+            emptySpan.style.color = "rgba(255,255,255,.5)";
+            emptySpan.textContent = "geen kaarten meer";
+            cardsContainer.appendChild(emptySpan);
+          }
+          
+          playerCardDiv.appendChild(cardsContainer);
+          playersCardsDiv.appendChild(playerCardDiv);
+        }
+        
+        els.boomControls.appendChild(playersCardsDiv);
+        
+        renderPlayers();
+      }
+
+      function renderBoomControlsNext(){
+        const current = state.boom[state.boomRevealIdx];
+        // Next button
+        const nextBtn = document.createElement("button");
+        nextBtn.type = "button";
+        nextBtn.textContent = (state.boomRevealIdx >= state.boom.length - 1) ? "Verder (uitslag)" : "Volgende boomkaart";
+        nextBtn.addEventListener("click", () => {
+          state.boomRevealIdx += 1;
+          if(state.boomRevealIdx >= state.boom.length){
+            finishPhase2();
+          } else {
+            renderBoomReveal();
+          }
+        });
+        els.boomControls.appendChild(nextBtn);
+      }
+
+      function showBoomDistributionDialog(playerName, totalSlokken){
+        const dialog = document.createElement("div");
+        dialog.className = "overlay";
+        dialog.innerHTML = "<div class='dialog'><h2>" + playerName + " verdeelt " + totalSlokken + " slokken</h2><p class='small hint'>Verdeel precies " + totalSlokken + " slokken onder de anderen.</p></div>";
+        
+        const dialogContent = dialog.querySelector(".dialog");
+        
+        // Create distribution inputs
+        const distributionDiv = document.createElement("div");
+        distributionDiv.style.marginTop = "16px";
+        
+        const distribution = {};
+        const inputs = {};
+        const valueSpans = {};
+        
+        for(let i = 0; i < state.players.length; i++){
+          const pl = state.players[i];
+          const rowDiv = document.createElement("div");
+          rowDiv.style.marginBottom = "16px";
+          
+          const labelRow = document.createElement("div");
+          labelRow.style.display = "flex";
+          labelRow.style.justifyContent = "space-between";
+          labelRow.style.marginBottom = "8px";
+          
+          const label = document.createElement("label");
+          label.style.fontWeight = "700";
+          label.textContent = pl.name;
+          
+          valueSpans[i] = document.createElement("span");
+          valueSpans[i].style.fontWeight = "700";
+          valueSpans[i].style.color = "var(--accent)";
+          valueSpans[i].textContent = "0";
+          
+          labelRow.appendChild(label);
+          labelRow.appendChild(valueSpans[i]);
+          rowDiv.appendChild(labelRow);
+          
+          const input = document.createElement("input");
+          input.type = "range";
+          input.min = "0";
+          input.max = totalSlokken;
+          input.value = "0";
+          input.style.width = "100%";
+          
+          inputs[i] = input;
+          
+          input.addEventListener("input", () => {
+            distribution[i] = Number(input.value) || 0;
+            valueSpans[i].textContent = input.value;
+            updateTotal();
+          });
+          
+          distribution[i] = 0;
+          rowDiv.appendChild(input);
+          distributionDiv.appendChild(rowDiv);
+        }
+        
+        dialogContent.appendChild(distributionDiv);
+        
+        // Check total
+        const checkDiv = document.createElement("div");
+        checkDiv.id = "boomCheckDiv";
+        checkDiv.style.marginTop = "20px";
+        checkDiv.style.padding = "12px";
+        checkDiv.style.background = "rgba(255,255,255,.08)";
+        checkDiv.style.border = "2px solid rgba(255,255,255,.2)";
+        checkDiv.style.borderRadius = "8px";
+        checkDiv.innerHTML = "<div class='small' style='display:flex;justify-content:space-between'><span>Totaal verdeeld:</span><strong id='boomTotalSpent'>0</strong></div><div class='small' style='margin-top:6px'><strong>/" + totalSlokken + " slokken</strong></div>";
+        dialogContent.appendChild(checkDiv);
+        
+        function updateTotal(){
+          let total = 0;
+          for(let key in distribution){
+            total += distribution[key];
+          }
+          document.getElementById("boomTotalSpent").textContent = total;
+          
+          // Update warning color
+          if(total !== totalSlokken){
+            checkDiv.style.background = "rgba(255,100,100,.15)";
+            checkDiv.style.borderColor = "rgba(255,100,100,.4)";
+            confirmBtn.disabled = true;
+            confirmBtn.style.opacity = "0.5";
+            confirmBtn.style.cursor = "not-allowed";
+          } else {
+            checkDiv.style.background = "rgba(100,200,100,.15)";
+            checkDiv.style.borderColor = "rgba(100,200,100,.4)";
+            confirmBtn.disabled = false;
+            confirmBtn.style.opacity = "1";
+            confirmBtn.style.cursor = "pointer";
+          }
+        }
+        
+        // Buttons
+        const buttonRow = document.createElement("div");
+        buttonRow.className = "controls";
+        buttonRow.style.justifyContent = "flex-end";
+        buttonRow.style.marginTop = "20px";
+        
+        const confirmBtn = document.createElement("button");
+        confirmBtn.type = "button";
+        confirmBtn.textContent = "Verdelen";
+        confirmBtn.disabled = true;
+        confirmBtn.style.opacity = "0.5";
+        confirmBtn.style.cursor = "not-allowed";
+        confirmBtn.addEventListener("click", () => {
+          for(let i = 0; i < state.players.length; i++){
+            const drinks = distribution[i] || 0;
+            if(drinks > 0){
+              state.players[i].drinks += drinks;
+            }
+          }
+          document.body.removeChild(dialog);
+          els.boomMsg.textContent = playerName + " heeft " + totalSlokken + " slokken verdeeld!";
+          renderPlayers();
+        });
+        
+        buttonRow.appendChild(confirmBtn);
+        dialogContent.appendChild(buttonRow);
+        
+        document.body.appendChild(dialog);
+      }
+
+      function iAmPastCurrentReveal(boom){
+        // we keep only the current reveal + already revealed
+        const idx = state.boom.indexOf(boom);
+        return idx > state.boomRevealIdx;
+      }
+
+      function renderCardMarkup(card, down){
+        if(down){
+          return "<div class='cardFace down'><div class='cardRank'>?</div></div>";
+        }
+        return "<div class='cardFace'><div class='cardRank'>" + card.rankLabel + "</div><div class='cardSuit'>" + card.suitSymbol + "</div></div>";
+      }
+
+      function finishPhase2(){
+        // count remaining unsurrendered cards (by rank)
+        const remaining = state.players.map(p => {
+          // Get set of surrendered ranks
+          const surrenderedRanks = new Set();
+          for(const sig of p.surrendered){
+            // sig format is "suit:rankValue"
+            const rankValue = sig.split(":")[1];
+            surrenderedRanks.add(rankValue);
+          }
+          // Count cards with ranks not in surrendered set
+          let cnt = 0;
+          for(const c of p.round1Cards){
+            if(!surrenderedRanks.has(String(c.rankValue))) cnt += 1;
+          }
+          return cnt;
+        });
+        let max = Math.max(...remaining);
+        let topIdx = [];
+        for(let i=0;i<remaining.length;i++){
+          if(remaining[i] === max) topIdx.push(i);
+        }
+
+        if(topIdx.length === 1){
+          state.busWinnerIdx = topIdx[0];
+          startBusPhase();
+        } else {
+          // Multiple players with same max count - start simple high-card tiebreaker
+          state.isTiebreaker = true;
+          state.tiebreakPlayers = topIdx;
+          state.tiebreakDraws = {};
+          state.tiebreakCurrentDrawIdx = 0;
+          renderTiebreaker();
+        }
+      }
+      
+      function renderTiebreaker(){
+        els.boomControls.innerHTML = "";
+        els.boomMsg.textContent = "Gelijkstand! Tiebreaker: spelers trekken een kaart.";
+        els.boomMsg.style.marginTop = "16px";
+        els.boomMsg.style.padding = "12px";
+        els.boomMsg.style.background = "rgba(251,169,224,.2)";
+        els.boomMsg.style.borderRadius = "12px";
+        els.boomMsg.style.border = "2px solid rgba(251,169,224,.5)";
+        
+        // Show already drawn cards
+        if(Object.keys(state.tiebreakDraws).length > 0){
+          const drawnDiv = document.createElement("div");
+          drawnDiv.style.marginTop = "12px";
+          drawnDiv.style.padding = "12px";
+          drawnDiv.style.background = "rgba(255,255,255,.08)";
+          drawnDiv.style.borderRadius = "12px";
+          drawnDiv.innerHTML = "<div class='small' style='margin-bottom:8px;color:var(--muted);font-weight:700'>Getrokken kaarten:</div>";
+          
+          for(const idx of state.tiebreakPlayers){
+            if(state.tiebreakDraws[idx]){
+              const card = state.tiebreakDraws[idx];
+              const p = state.players[idx];
+              const cardRow = document.createElement("div");
+              cardRow.style.marginTop = "6px";
+              cardRow.style.display = "flex";
+              cardRow.style.alignItems = "center";
+              cardRow.style.gap = "8px";
+              
+              const nameSpan = document.createElement("span");
+              nameSpan.textContent = p.name + ":";
+              nameSpan.style.fontWeight = "900";
+              nameSpan.style.minWidth = "80px";
+              
+              const cardEl = document.createElement("span");
+              cardEl.style.padding = "4px 8px";
+              cardEl.style.background = "rgba(251,169,224,.3)";
+              cardEl.style.border = "1px solid rgba(251,169,224,.6)";
+              cardEl.style.borderRadius = "6px";
+              cardEl.style.fontWeight = "bold";
+              cardEl.style.fontSize = "16px";
+              cardEl.textContent = card.rankLabel + card.suitSymbol;
+              
+              cardRow.appendChild(nameSpan);
+              cardRow.appendChild(cardEl);
+              drawnDiv.appendChild(cardRow);
+            }
+          }
+          
+          els.boomControls.appendChild(drawnDiv);
+        }
+        
+        // Show draw button or results
+        const controls = document.createElement("div");
+        controls.className = "controls";
+        controls.style.marginTop = "12px";
+        
+        if(state.tiebreakCurrentDrawIdx < state.tiebreakPlayers.length){
+          const currentIdx = state.tiebreakPlayers[state.tiebreakCurrentDrawIdx];
+          const currentPlayer = state.players[currentIdx];
+          
+          const drawBtn = document.createElement("button");
+          drawBtn.type = "button";
+          drawBtn.textContent = currentPlayer.name + " trekt kaart";
+          drawBtn.addEventListener("click", () => {
+            const drawn = nextCard();
+            if(!drawn){
+              els.boomMsg.textContent = "Deck is op!";
+              return;
+            }
+            state.tiebreakDraws[currentIdx] = drawn;
+            state.tiebreakCurrentDrawIdx += 1;
+            renderTiebreaker();
+          });
+          controls.appendChild(drawBtn);
+        } else {
+          // All players have drawn - determine winner
+          const draws = state.tiebreakPlayers.map(idx => ({
+            idx,
+            card: state.tiebreakDraws[idx]
+          }));
+          
+          // Sort by card rank value (highest first)
+          draws.sort((a, b) => (b.card ? b.card.rankValue : 0) - (a.card ? a.card.rankValue : 0));
+          state.busWinnerIdx = draws[0].idx;
+          
+          const winnerName = state.players[state.busWinnerIdx].name;
+          els.boomMsg.textContent = winnerName + " wint met " + draws[0].card.rankLabel + draws[0].card.suitSymbol + "!";
+          
+          const continueBtn = document.createElement("button");
+          continueBtn.type = "button";
+          continueBtn.textContent = "Doorgaan naar Bus";
+          continueBtn.addEventListener("click", () => {
+            state.isTiebreaker = false;
+            startBusPhase();
+          });
+          controls.appendChild(continueBtn);
+        }
+        
+        els.boomControls.appendChild(controls);
+        renderPlayers();
+      }
+      
+      function startBusPhase(){
+        state.isTiebreaker = false;
+        setStage("Fase 3 - Bus", "Bus start met de winnaar uit fase 2. Er worden 2 kaarten getrokken: hoogste bepaalt speel-lengte, laagste bepaalt hoeveel je mag openen (max 3).", "Bus-speler: " + state.players[state.busWinnerIdx].name);
+        state.phase = "phase3";
+        ensurePhaseAreas();
+        els.phase3Area.style.display = "block";
+        renderPhase3Start();
+      }
+
+      // --------------------------
+      // FASE 3 - Bus
+      // --------------------------
+      function renderPhase3Start(){
+        els.busGuessControls.innerHTML = "";
+        els.busError.textContent = "";
+        const p = state.players[state.busWinnerIdx];
+        
+        // Show drawn cards if any
+        let drawnInfo = "";
+        if(state.busTriggerCard1){
+          drawnInfo += "1ste kaart: " + state.busTriggerCard1.rankLabel + state.busTriggerCard1.suitSymbol;
+        }
+        if(state.busTriggerCard2){
+          drawnInfo += " | 2de kaart: " + state.busTriggerCard2.rankLabel + state.busTriggerCard2.suitSymbol;
+        }
+        
+        els.busMsg.textContent = p.name + " - Trek 2 kaarten om de bus vorm te bepalen.";
+        if(drawnInfo){
+          els.busInfo.textContent = drawnInfo;
+        }
+        
+        // Draw buttons
+        const btnContainer = document.createElement("div");
+        btnContainer.className = "controls";
+        btnContainer.style.marginTop = "12px";
+        
+        if(!state.busTriggerCard1){
+          const drawBtn1 = document.createElement("button");
+          drawBtn1.type = "button";
+          drawBtn1.textContent = "Trek kaart 1";
+          drawBtn1.addEventListener("click", () => {
+            const drawn = nextCard();
+            if(!drawn){
+              els.busMsg.textContent = "Deck is op!";
+              return;
+            }
+            state.busTriggerCard1 = drawn;
+            renderPhase3Start();
+          });
+          btnContainer.appendChild(drawBtn1);
+        } else if(!state.busTriggerCard2){
+          const drawBtn2 = document.createElement("button");
+          drawBtn2.type = "button";
+          drawBtn2.textContent = "Trek kaart 2";
+          drawBtn2.addEventListener("click", () => {
+            const drawn = nextCard();
+            if(!drawn){
+              els.busMsg.textContent = "Deck is op!";
+              return;
+            }
+            state.busTriggerCard2 = drawn;
+            renderPhase3Start();
+          });
+          btnContainer.appendChild(drawBtn2);
+        } else {
+          // Both cards drawn - show Volgende button
+          const nextBtn = document.createElement("button");
+          nextBtn.type = "button";
+          nextBtn.textContent = "Volgende";
+          nextBtn.addEventListener("click", () => {
+            finishBusTrigger();
+          });
+          btnContainer.appendChild(nextBtn);
+        }
+        
+        els.busGuessControls.appendChild(btnContainer);
+        renderPlayers();
+      }
+      
+      function finishBusTrigger(){
+        // Both cards have been drawn - set up the bus grid
+        const c1 = state.busTriggerCard1;
+        const c2 = state.busTriggerCard2;
+        
+        const high = Math.max(c1.rankValue, c2.rankValue);
+        const low = Math.min(c1.rankValue, c2.rankValue);
+        
+        // interpret: total cards played = high, width=2 => length rows
+        const lengthRows = Math.max(2, Math.ceil(high / 2));
+        const totalCells = lengthRows * 2;
+        const openCount = low; // Laagste kaart bepaalt aantal open kaarten
+        
+        // draw ALL cards for the bus grid
+        const busCards = [];
+        for(let i=0;i<totalCells;i++){
+          const c = nextCard();
+          if(!c) break;
+          busCards.push(c);
+        }
+        
+        // build path: start bottom-left, go up left column, then right at top, then down right column
+        const path = [];
+        // Go up in left column (bottom row to top row)
+        for(let r=lengthRows-1; r>=0; r--){
+          path.push({ r, c:0 });
+        }
+        // Go to top-right and down in right column
+        path.push({ r:0, c:1 });
+        for(let r=1; r<lengthRows; r++){
+          path.push({ r, c:1 });
+        }
+        
+        // Initialize grid with all drawn cards
+        state.busGrid = busCards.map(c => ({ card:c }));
+        state.busPath = path;
+        state.busOpenCells = new Set();
+        state.busRevealedCards = new Set();
+        state.busStepIdx = 0;
+        state.busReachedCheckpoint = false;
+        state.busCheckpointIdx = Math.floor((totalCells - 1) / 2);
+        state.busCurrentCard = null;
+        
+        const p = state.players[state.busWinnerIdx];
+        els.busMsg.textContent = p.name + " begint. Hoogste: " + high + ", laagste: " + low + ".";
+        els.busInfo.textContent = "Grid: 2 breed x " + lengthRows + " lang (" + totalCells + " kaarten). Je mag " + openCount + " kaarten openleggen.";
+        
+        // starting cell must be open: path index 0 (bottom-left)
+        state.busOpenCells.add(0);
+        state.busRevealedCards.add(0);
+        renderBusGrid(true, openCount);
+        
+        // open selection controls
+        els.busGuessControls.innerHTML = "";
+        if(openCount <= 1){
+          const startBtn = document.createElement("button");
+          startBtn.type = "button";
+          startBtn.textContent = "Start met raden";
+          startBtn.disabled = false;
+          startBtn.addEventListener("click", () => {
+            startBusPlay();
+          });
+          els.busGuessControls.appendChild(startBtn);
+          return;
+        }
+        
+        const selectedNow = state.busOpenCells.size;
+        const remainingToPick = openCount - selectedNow;
+        const startBtn = document.createElement("button");
+        startBtn.type = "button";
+        startBtn.textContent = "Start met raden (open geselecteerd: " + selectedNow + "/" + openCount + ")";
+        startBtn.disabled = true;
+        startBtn.addEventListener("click", () => startBusPlay());
+        els.busGuessControls.appendChild(startBtn);
+        
+        renderBusOpenSelection(openCount, startBtn);
+      }
+
+      function renderBusOpenSelection(openCount, startBtnEl){
+        // clicks are handled during renderBusGrid
+        // start button state will be updated when selecting.
+        // We keep this function for readability.
+        updateStartButtonOpenReady(openCount, startBtnEl);
+      }
+
+      function updateStartButtonOpenReady(openCount, startBtnEl){
+        const selectedNow = state.busOpenCells.size;
+        startBtnEl.textContent = "Start met raden (open geselecteerd: " + selectedNow + "/" + openCount + ")";
+        startBtnEl.disabled = selectedNow !== openCount;
+      }
+
+      function renderBusGrid(isOpenSelectMode, openCount){
+        els.busGridWrap.innerHTML = "";
+        const rows = state.busPath.length ? state.busPath.reduce((m, p) => Math.max(m, p.r), 0) + 1 : 0;
+        // render as 2 columns, each column as lengthRows cells top->bottom
+        const lengthRows = rows;
+        for(const col of [0,1]){
+          const colEl = document.createElement("div");
+          colEl.className = "busCol";
+          for(let r=0; r<lengthRows; r++){
+            // find path index for this (r,col)
+            let idx = -1;
+            for(let i=0;i<state.busPath.length;i++){
+              const pos = state.busPath[i];
+              if(pos.r === r && pos.c === col){ idx = i; break; }
+            }
+            const cell = document.createElement("button");
+            cell.type = "button";
+            cell.style.width = "110px";
+            cell.style.height = "70px";
+            cell.style.borderRadius = "14px";
+            cell.style.border = "2px solid rgba(255,255,255,.25)";
+            cell.style.background = "rgba(255,255,255,.08)";
+            cell.style.cursor = "pointer";
+            
+            // Highlight current position during gameplay
+            if(!isOpenSelectMode && idx === state.busStepIdx){
+              cell.style.border = "3px solid rgba(255,255,255,.8)";
+              cell.style.background = "rgba(255,255,255,.15)";
+            }
+
+            const open = (isOpenSelectMode ? state.busOpenCells.has(idx) : (state.busOpenCells.has(idx) || state.busRevealedCards.has(idx)));
+            if(open){
+              const card = state.busGrid[idx].card;
+              cell.innerHTML = "<div class='cardFace'><div class='cardRank'>" + card.rankLabel + "</div><div class='cardSuit'>" + card.suitSymbol + "</div></div>";
+            } else {
+              cell.innerHTML = "<div class='cardFace down'><div class='cardRank'>?</div></div>";
+            }
+
+            if(isOpenSelectMode){
+              const mustBeStart = (idx === 0);
+              const selectable = !mustBeStart && !state.busOpenCells.has(idx);
+              cell.disabled = !selectable || (state.busOpenCells.size >= openCount);
+              cell.addEventListener("click", () => {
+                state.busOpenCells.add(idx);
+                state.busRevealedCards.add(idx);
+                renderBusGrid(true, openCount);
+                // enable start button when enough
+                // We locate start button by text in DOM for quick approach:
+                // (called with start button from renderPhase3Start; stored in closure)
+                const btn = els.busGuessControls.querySelector("button");
+                if(btn) updateStartButtonOpenReady(openCount, btn);
+              });
+            } else {
+              cell.disabled = true;
+            }
+            colEl.appendChild(cell);
+          }
+          els.busGridWrap.appendChild(colEl);
+        }
+      }
+
+      function startBusPlay(){
+        // switch to play mode
+        state.busStepIdx = 0;
+        state.busReachedCheckpoint = false;
+        state.busCurrentCard = state.busGrid[0].card;
+        renderBusGameplay();
+      }
+      
+      function renderBusGameplay(){
+        renderBusGrid(false, 0);
+        els.busGuessControls.innerHTML = "";
+        els.busError.textContent = "";
+        
+        const p = state.players[state.busWinnerIdx];
+        const posNum = state.busStepIdx + 1;
+        const totalPos = state.busGrid.length;
+        
+        // Show current position and card
+        let currentCardDisplay = "?";
+        let currentCard = state.busGrid[state.busStepIdx].card;
+        if(currentCard){
+          currentCardDisplay = currentCard.rankLabel + currentCard.suitSymbol;
+        }
+        
+        els.busMsg.textContent = "Je bent op positie " + posNum + "/" + totalPos;
+        els.busInfo.textContent = "Huidige kaart: " + currentCardDisplay + " → Gok: de volgende kaart is HOGER of LAGER?";
+
+        const higherBtn = document.createElement("button");
+        higherBtn.type = "button";
+        higherBtn.textContent = "HOGER";
+        const lowerBtn = document.createElement("button");
+        lowerBtn.type = "button";
+        lowerBtn.textContent = "LAGER";
+        
+        // Only enable if current position has a card to compare against
+        const canGuess = currentCard !== null;
+        higherBtn.disabled = !canGuess;
+        lowerBtn.disabled = !canGuess;
+        
+        higherBtn.addEventListener("click", () => busGuess("higher"));
+        lowerBtn.addEventListener("click", () => busGuess("lower"));
+        els.busGuessControls.appendChild(higherBtn);
+        els.busGuessControls.appendChild(lowerBtn);
+      }
+
+      function busGuess(dir){
+        const currentIdx = state.busStepIdx;
+        const nextIdx = state.busStepIdx + 1;
+        
+        // Check if we're already past the end
+        if(currentIdx >= state.busGrid.length){
+          return;
+        }
+        
+        // Current card must exist
+        let currentCard = state.busGrid[currentIdx].card;
+        if(!currentCard){
+          els.busError.textContent = "Geen kaart om tegen te vergelijken!";
+          return;
+        }
+        
+        // Draw a new card from the deck
+        const drawnCard = nextCard();
+        if(!drawnCard){
+          // Deck is empty - show button to refill
+          state.busPendingGuess = dir;
+          els.busError.innerHTML = "<div style='padding: 12px; background: rgba(255,165,0,.2); border: 2px solid rgba(255,165,0,.5); border-radius: 8px; margin-bottom: 12px;'>Deck is op! Trek een nieuw deck.</div>";
+          
+          els.busGuessControls.innerHTML = "";
+          const newDeckBtn = document.createElement("button");
+          newDeckBtn.type = "button";
+          newDeckBtn.textContent = "Nieuw Deck";
+          newDeckBtn.addEventListener("click", () => {
+            refillDeck();
+          });
+          els.busGuessControls.appendChild(newDeckBtn);
+          return;
+        }
+        
+        if(state.busStepIdx >= state.busCheckpointIdx){
+          state.busReachedCheckpoint = true;
+        }
+        
+        // Check if guess is correct (comparing drawn card against current card)
+        const ok = (dir === "higher") 
+          ? (drawnCard.rankValue > currentCard.rankValue) 
+          : (drawnCard.rankValue < currentCard.rankValue);
+        
+        if(ok){
+          // Correct! Place drawn card at current position, then move forward
+          state.busGrid[currentIdx].card = drawnCard;
+          state.busRevealedCards.add(currentIdx);
+          state.busStepIdx = nextIdx;
+          
+          // Check if we've completed all positions
+          if(state.busStepIdx >= state.busGrid.length){
+            els.busMsg.textContent = "🎉 Je hebt alle kaarten geraden! Je bent de Bussen-kampioen!";
+            els.busGuessControls.innerHTML = "";
+            return;
+          }
+          
+          els.busError.textContent = "";
+          renderBusGameplay();
+          return;
+        }
+        
+        // Wrong: place the card anyway and add drinks based on position from checkpoint/start
+        const busP = state.players[state.busWinnerIdx];
+        state.busGrid[currentIdx].card = drawnCard;
+        state.busRevealedCards.add(currentIdx);
+        // Count from checkpoint if reached, otherwise from start
+        const baseIdx = state.busReachedCheckpoint ? state.busCheckpointIdx : 0;
+        const failSipCount = (currentIdx - baseIdx) + 1;
+        if(busP) busP.drinks += failSipCount;
+        
+        const resetIdx = state.busReachedCheckpoint ? state.busCheckpointIdx : 0;
+        state.busStepIdx = resetIdx;
+        
+        const currentCardStr = currentCard.rankLabel + currentCard.suitSymbol;
+        const drawnStr = drawnCard.rankLabel + drawnCard.suitSymbol;
+        
+        els.busError.textContent = "❌ Fout! " + currentCardStr + " → je dacht " + (dir === "higher" ? "HOGER" : "LAGER") + " maar het was " + drawnStr + ". Je drinkt " + failSipCount + " sloken. Terug naar positie " + (resetIdx+1) + ".";
+        renderPlayers();
+        deckInfo();
+        renderBusGameplay();
+      }
+      
+      function refillDeck(){
+        state.deck = makeDeck();
+        deckInfo();
+        
+        if(state.busPendingGuess){
+          const pendingDir = state.busPendingGuess;
+          state.busPendingGuess = null;
+          busGuess(pendingDir);
+        }
+      }
+
+      // --------------------------
+      // Events
+      // --------------------------
+      els.btnRestart.addEventListener("click", () => resetToSetup());
+      els.btnStart.addEventListener("click", () => {
+        const n = Math.max(2, Math.min(10, Number(els.playerCount.value) || 2));
+        const players = readPlayers(n);
+        startGame(players);
+      });
+      els.playerCount.addEventListener("input", () => {
+        const n = Math.max(2, Math.min(10, Number(els.playerCount.value) || 2));
+        els.playerCountValue.textContent = String(n);
+        buildNameInputs(n);
+      });
+
+      (function init(){
+        const n = Number(els.playerCount.value) || 4;
+        els.playerCountValue.textContent = String(n);
+        buildNameInputs(n);
+      })();
+    </script>
+  </body>
+</html>

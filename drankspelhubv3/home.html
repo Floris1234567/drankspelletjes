@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Drankspel Hub</title>
+    <style>
+      :root{
+        --bg:#216225;
+        --panel:#2e7a34;
+        --text:#fff7ff;
+        --muted:#ffe3f4;
+        --accent:#fba9e0;
+      }
+      *{box-sizing:border-box}
+      body{
+        margin:0;
+        font-family:"Trebuchet MS","Segoe UI",Tahoma,Arial,sans-serif;
+        color:var(--text);
+        background:
+          radial-gradient(900px 550px at 10% 0%, rgba(251,169,224,.36), transparent 60%),
+          radial-gradient(1000px 600px at 90% 30%, rgba(255,255,255,.12), transparent 65%),
+          var(--bg);
+        min-height:100vh;
+      }
+      .wrap{
+        max-width:980px;
+        margin:0 auto;
+        padding:24px 16px 36px;
+      }
+      .hero{
+        background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+        border:2px solid rgba(255,255,255,.25);
+        border-radius:22px;
+        padding:22px;
+        box-shadow:0 16px 32px rgba(0,0,0,.24);
+      }
+      h1{
+        margin:0;
+        font-size:clamp(30px,4.6vw,52px);
+        line-height:1;
+      }
+      .subtitle{
+        margin:10px 0 0;
+        color:var(--muted);
+        font-weight:700;
+      }
+      .games{
+        margin-top:16px;
+        display:grid;
+        grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+        gap:12px;
+      }
+      .game{
+        background:rgba(255,255,255,.14);
+        border:2px solid rgba(255,255,255,.3);
+        border-radius:18px;
+        padding:14px;
+      }
+      .game h2{margin:0 0 8px;font-size:20px}
+      .game p{margin:0 0 12px;color:var(--muted);font-size:14px}
+      .btn{
+        display:inline-block;
+        text-decoration:none;
+        color:#1f1f1f;
+        font-weight:900;
+        background:var(--accent);
+        border:2px solid rgba(255,255,255,.6);
+        border-radius:14px;
+        padding:10px 14px;
+      }
+      .btn:hover{filter:brightness(1.04)}
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="hero">
+        <h1>Drankspel Hub</h1>
+        <p class="subtitle">Kies je spel en start de gezelligheid.</p>
+        <div class="games">
+          <article class="game">
+            <h2>Spinnenweb</h2>
+            <p>Rood of zwart raden in het spinnenweb.</p>
+            <a class="btn" href="index.html">Naar Spinnenweb</a>
+          </article>
+          <article class="game">
+            <h2>Chinese Muur</h2>
+            <p>Deze pagina staat klaar voor je volgende spel.</p>
+            <a class="btn" href="chinese-muur.html">Naar Chinese Muur</a>
+          </article>
+          <article class="game">
+            <h2>Bussen</h2>
+            <p>Deze pagina staat klaar voor je volgende spel.</p>
+            <a class="btn" href="dutchen.html">Naar Dutchen</a>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Chinese Muur - Drankspel</title>
+    <style>
+      :root{
+        --bg:#216225;
+        --panel:#2e7a34;
+        --text:#fff7ff;
+        --muted:#ffe3f4;
+        --accent:#fba9e0;
+        --grid-gap:clamp(4px,0.45vw,8px);
+        --cell-size:clamp(42px, min(calc((100vw - 440px) / 13), calc((100vh - 230px) / 13)), 92px);
+      }
+      *{box-sizing:border-box}
+      body{
+        margin:0;
+        font-family:"Trebuchet MS","Segoe UI",Tahoma,Arial,sans-serif;
+        background:
+          radial-gradient(900px 550px at 10% 0%, rgba(251,169,224,.35), transparent 62%),
+          radial-gradient(1000px 600px at 90% 30%, rgba(255,255,255,.12), transparent 64%),
+          var(--bg);
+        color:var(--text);
+      }
+      .wrap{width:100%;margin:0 auto;padding:16px;}
+      .top{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+      .panel{
+        background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+        border:2px solid rgba(255,255,255,.25);
+        border-radius:18px;
+        padding:12px;
+        box-shadow:0 12px 26px rgba(0,0,0,.25);
+      }
+      h1,h2,h3{margin:0}
+      .small{color:var(--muted);font-size:13px}
+      .layout{display:grid;grid-template-columns:minmax(0, 1fr) 360px;gap:10px;align-items:start;}
+      @media (max-width:1080px){
+        .layout{grid-template-columns:1fr}
+      }
+      .gridWrap{
+        overflow:auto;
+        max-height:calc(100vh - 210px);
+        padding:4px;
+        display:flex;
+        justify-content:center;
+      }
+      .grid{
+        display:grid;
+        grid-template-columns:repeat(13,var(--cell-size));
+        grid-template-rows:repeat(13,var(--cell-size));
+        gap:var(--grid-gap);
+      }
+      .cell{
+        border:2px solid rgba(255,255,255,.22);
+        border-radius:10px;
+        background:rgba(0,0,0,.12);
+        color:var(--text);
+        font-weight:800;
+        cursor:pointer;
+        position:relative;
+      }
+      .cell:hover:not(:disabled){transform:translateY(-1px)}
+      .cell:disabled{cursor:default;opacity:.95}
+      .cell.selectable{outline:2px dashed rgba(251,169,224,.7)}
+      .cell.selected{outline:3px solid rgba(255,255,255,.85)}
+      .card{
+        width:100%;height:100%;
+        border-radius:8px;
+        display:flex;align-items:center;justify-content:center;
+        flex-direction:column;gap:2px;
+        background:rgba(255,255,255,.18);
+      }
+      .card.red{color:#ffd3de;background:rgba(255,96,133,.28)}
+      .card.black{color:#e9ecff;background:rgba(36,45,60,.48)}
+      .controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+      .turnTitle{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+      .turnPlayer{font-size:18px;font-weight:900;color:var(--muted)}
+      button,a.btn{
+        border:2px solid rgba(255,255,255,.3);
+        background:rgba(251,169,224,.24);
+        color:var(--text);
+        font-weight:900;
+        border-radius:12px;
+        padding:8px 11px;
+        text-decoration:none;
+        cursor:pointer;
+      }
+      button:disabled{opacity:.55;cursor:default}
+      .guessBtn{
+        min-width:240px;
+        min-height:88px;
+        padding:16px 24px;
+        font-size:30px;
+        line-height:1;
+        border-radius:16px;
+      }
+      .guessBtn.guess-red{
+        background:#c62d37;
+        border-color:#ffb3b9;
+        color:#fff;
+      }
+      .guessBtn.guess-black{
+        background:#171a1f;
+        border-color:#7d889a;
+        color:#ffffff;
+      }
+      .guessBtn.guess-up,
+      .guessBtn.guess-down,
+      .guessBtn.guess-in,
+      .guessBtn.guess-out{
+        background:rgba(251,169,224,.32);
+      }
+      .players{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+      #playersList{margin-top:12px}
+      .player{
+        border:2px solid rgba(255,255,255,.2);
+        border-radius:12px;padding:8px;background:rgba(255,255,255,.08);
+      }
+      .player.current{border-color:rgba(251,169,224,.9);background:rgba(251,169,224,.2)}
+      .overlay{
+        position:fixed;inset:0;background:rgba(0,0,0,.5);
+        display:flex;align-items:center;justify-content:center;padding:16px;z-index:40;
+      }
+      .resultOverlay{
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,.6);
+        display:none;
+        align-items:center;
+        justify-content:center;
+        padding:16px;
+        z-index:60;
+      }
+      .resultDialog{
+        width:min(460px,100%);
+        text-align:center;
+        transform:scale(1.5);
+        transform-origin:center;
+      }
+      .resultTitle{font-size:42px;font-weight:900;line-height:1}
+      .resultTitle.good{color:#8cffac}
+      .resultTitle.bad{color:#ffb5b5}
+      .resultSips{font-size:22px;font-weight:900;margin-top:8px}
+      .resultChance{font-size:18px;font-weight:800;margin-top:8px;color:var(--muted)}
+      .resultCardWrap{display:flex;justify-content:center;margin-top:14px}
+      .resultCard{
+        width:150px;
+        height:190px;
+        border-radius:14px;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        gap:8px;
+        font-size:42px;
+        font-weight:900;
+        border:2px solid rgba(255,255,255,.34);
+        box-shadow:0 16px 30px rgba(0,0,0,.34);
+      }
+      .resultHint{margin-top:14px;color:var(--muted);font-weight:700}
+      .dialog{width:min(760px,100%);}
+      .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+      @media (max-width:700px){.row{grid-template-columns:1fr}}
+      label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;font-weight:700}
+      input[type="text"],input[type="range"]{
+        width:100%;padding:8px 10px;border-radius:10px;border:2px solid rgba(255,255,255,.24);
+        background:rgba(0,0,0,.18);color:var(--text);
+      }
+      .msg{white-space:pre-wrap;line-height:1.35}
+      @media (max-width:1080px){
+        :root{
+          --cell-size:clamp(30px, min(calc((100vw - 40px) / 13), calc((100vh - 330px) / 13)), 70px);
+          --grid-gap:clamp(2px,0.4vw,5px);
+        }
+        .resultDialog{transform:scale(1.08)}
+        .guessBtn{
+          min-width:170px;
+          min-height:64px;
+          padding:12px 14px;
+          font-size:23px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <div class="panel" style="flex:1 1 520px">
+          <h1>Chinese Muur</h1>
+          <div class="small">Doel: leg 3 kaarten achter elkaar in jouw beurt. Daarna mag je de beurt doorgeven of doorgaan voor uitdeel-slokken.</div>
+        </div>
+        <div class="panel" style="flex:0 0 auto;display:flex;align-items:center;gap:8px">
+          <a class="btn" href="home.html">Naar home</a>
+          <button id="btnNewDeck" type="button" disabled>Nieuw deck</button>
+          <button id="btnRestart" type="button">Nieuwe ronde</button>
+        </div>
+      </div>
+      <div class="layout">
+        <div class="panel">
+          <div class="small" id="deckInfo">Deck: 52 kaarten</div>
+          <div class="gridWrap">
+            <div id="grid" class="grid"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2 class="turnTitle">Beurt <span id="turnPlayer" class="turnPlayer">-&gt; -</span></h2>
+          <div class="msg" id="turnMsg">Kies een vak.</div>
+          <div class="small" id="ruleInfo"></div>
+          <div class="small" id="streakInfo">Reeks: 0</div>
+          <div class="small" id="bonusInfo">Uitdeel-slokken: 0</div>
+          <div class="controls" id="guessControls"></div>
+          <div class="controls">
+            <button id="btnEndTurn" type="button" disabled>Beurt doorgeven</button>
+          </div>
+          <div id="bonusDistributor" class="panel" style="display:none;margin-top:8px;padding:10px;">
+            <div class="small" id="bonusDistributeInfo"></div>
+            <div id="bonusInputs" class="players" style="margin-top:8px"></div>
+            <div class="controls">
+              <button id="btnApplyBonus" type="button" disabled>Slokken uitdelen & beurt doorgeven</button>
+              <button id="btnCancelBonus" type="button">Annuleren</button>
+            </div>
+          </div>
+          <div class="small" style="margin-top:8px">Getrokken kaart: <span id="drawInfo">-</span></div>
+          <h3 style="margin-top:24px">Spelers</h3>
+          <div class="players" id="playersList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="drawPopup" class="resultOverlay" role="dialog" aria-modal="true" aria-live="polite">
+      <div class="panel resultDialog">
+        <div id="popupTitle" class="resultTitle">Goed!</div>
+        <div id="popupSips" class="resultSips">Slokken: 0</div>
+        <div id="popupChance" class="resultChance">Kans: 0%</div>
+        <div class="resultCardWrap">
+          <div id="popupCard" class="resultCard card red">
+            <div>A</div>
+            <div>&hearts;</div>
+          </div>
+        </div>
+        <div class="resultHint">Tik ergens om verder te gaan</div>
+      </div>
+    </div>
+
+    <div id="overlay" class="overlay" role="dialog" aria-modal="true">
+      <div class="panel dialog">
+        <h2>Start Chinese Muur</h2>
+        <p class="small">Kies 2-10 spelers en vul namen in.</p>
+        <div class="row">
+          <div>
+            <label for="playerCount">Aantal spelers</label>
+            <input id="playerCount" type="range" min="2" max="10" value="4" />
+            <div class="small">Huidig: <span id="playerCountValue">4</span></div>
+          </div>
+        </div>
+        <div id="nameFields" style="margin-top:10px"></div>
+        <div class="controls">
+          <button id="btnStart" type="button">Start spel</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const GRID_SIZE = 13;
+      const CENTER = 6;
+      const SUITS = [
+        { key: "hearts", symbol: "\u2665", color: "red" },
+        { key: "diamonds", symbol: "\u2666", color: "red" },
+        { key: "clubs", symbol: "\u2663", color: "black" },
+        { key: "spades", symbol: "\u2660", color: "black" }
+      ];
+      const RANKS = [
+        { label: "A", value: 1 }, { label: "2", value: 2 }, { label: "3", value: 3 }, { label: "4", value: 4 },
+        { label: "5", value: 5 }, { label: "6", value: 6 }, { label: "7", value: 7 }, { label: "8", value: 8 },
+        { label: "9", value: 9 }, { label: "10", value: 10 }, { label: "B", value: 11 }, { label: "V", value: 12 }, { label: "H", value: 13 }
+      ];
+
+      const els = {
+        grid: document.getElementById("grid"),
+        drawPopup: document.getElementById("drawPopup"),
+        popupTitle: document.getElementById("popupTitle"),
+        popupSips: document.getElementById("popupSips"),
+        popupChance: document.getElementById("popupChance"),
+        popupCard: document.getElementById("popupCard"),
+        turnPlayer: document.getElementById("turnPlayer"),
+        turnMsg: document.getElementById("turnMsg"),
+        ruleInfo: document.getElementById("ruleInfo"),
+        streakInfo: document.getElementById("streakInfo"),
+        bonusInfo: document.getElementById("bonusInfo"),
+        guessControls: document.getElementById("guessControls"),
+        btnEndTurn: document.getElementById("btnEndTurn"),
+        bonusDistributor: document.getElementById("bonusDistributor"),
+        bonusDistributeInfo: document.getElementById("bonusDistributeInfo"),
+        bonusInputs: document.getElementById("bonusInputs"),
+        btnApplyBonus: document.getElementById("btnApplyBonus"),
+        btnCancelBonus: document.getElementById("btnCancelBonus"),
+        drawInfo: document.getElementById("drawInfo"),
+        deckInfo: document.getElementById("deckInfo"),
+        playersList: document.getElementById("playersList"),
+        btnNewDeck: document.getElementById("btnNewDeck"),
+        btnRestart: document.getElementById("btnRestart"),
+        overlay: document.getElementById("overlay"),
+        playerCount: document.getElementById("playerCount"),
+        playerCountValue: document.getElementById("playerCountValue"),
+        nameFields: document.getElementById("nameFields"),
+        btnStart: document.getElementById("btnStart")
+      };
+
+      const state = {
+        players: [],
+        currentPlayerIdx: 0,
+        grid: [],
+        deck: [],
+        selected: null,
+        phase: "setup",
+        drawCard: null,
+        turnPlacedStreak: 0,
+        bonusSips: 0
+      };
+
+      function makeDeck(){
+        const deck = [];
+        for(const suit of SUITS){
+          for(const rank of RANKS){
+            deck.push({ suit: suit.key, suitSymbol: suit.symbol, color: suit.color, rank: rank.label, rankValue: rank.value });
+          }
+        }
+        for(let i = deck.length - 1; i > 0; i--){
+          const j = Math.floor(Math.random() * (i + 1));
+          const temp = deck[i]; deck[i] = deck[j]; deck[j] = temp;
+        }
+        return deck;
+      }
+
+      function emptyGrid(){
+        return Array.from({ length: GRID_SIZE }, () => Array.from({ length: GRID_SIZE }, () => null));
+      }
+
+      function inBounds(x, y){ return x >= 0 && y >= 0 && x < GRID_SIZE && y < GRID_SIZE; }
+      function cardAt(x, y){ return inBounds(x, y) ? state.grid[y][x] : null; }
+
+      function orthNeighbors(x, y){
+        const dirs = [[0,-1],[1,0],[0,1],[-1,0]];
+        const out = [];
+        for(const d of dirs){
+          const nx = x + d[0], ny = y + d[1];
+          const c = cardAt(nx, ny);
+          if(c) out.push({ x:nx, y:ny, card:c });
+        }
+        return out;
+      }
+
+      function isBoardEmpty(){
+        for(const row of state.grid){
+          for(const c of row){
+            if(c) return false;
+          }
+        }
+        return true;
+      }
+
+      function selectableCell(x, y){
+        if(cardAt(x, y)) return false;
+        if(isBoardEmpty()) return x === CENTER && y === CENTER;
+        return orthNeighbors(x, y).length > 0;
+      }
+
+      function selectionRule(x, y){
+        const neighbors = orthNeighbors(x, y);
+        if(isBoardEmpty()) return { type: "color", text: "Leeg veld: raad rood of zwart." };
+        if(neighbors.length === 1){
+          const n = neighbors[0];
+          return { type: "highlow", ref: n.card, text: "Grenst aan 1 kaart: raad hoger of lager dan " + n.card.rank + "." };
+        }
+        if(neighbors.length === 2){
+          const a = neighbors[0].card.rankValue;
+          const b = neighbors[1].card.rankValue;
+          const min = Math.min(a,b), max = Math.max(a,b);
+          return { type: "between", min, max, text: "Grenst aan 2 kaarten: raad tussen of buiten (" + min + "-" + max + ")." };
+        }
+        const suits = [...new Set(neighbors.map(n => n.card.suit))].map(s => SUITS.find(t => t.key === s).symbol).join(" ");
+        return { type: "suitpresence", suitKeys: neighbors.map(n => n.card.suit), text: "Grenst aan 3-4 kaarten: raad of symbool al ligt (" + suits + ")." };
+      }
+
+      function nextCard(){
+        return state.deck.length ? state.deck.pop() : null;
+      }
+
+      function refreshDeckInfo(){
+        if(state.deck.length <= 0){
+          els.deckInfo.textContent = "Deck: 0 kaarten over (deck is op)";
+          els.btnNewDeck.disabled = false;
+        } else {
+          els.deckInfo.textContent = "Deck: " + state.deck.length + " kaarten over";
+          els.btnNewDeck.disabled = true;
+        }
+      }
+
+      function evaluate(rule, guess, card){
+        if(rule.type === "color") return guess === card.color;
+        if(rule.type === "highlow"){
+          if(guess === "higher") return card.rankValue > rule.ref.rankValue;
+          return card.rankValue < rule.ref.rankValue;
+        }
+        if(rule.type === "between"){
+          const between = card.rankValue > rule.min && card.rankValue < rule.max;
+          if(guess === "between") return between;
+          return card.rankValue < rule.min || card.rankValue > rule.max;
+        }
+        if(rule.type === "suitpresence"){
+          const present = rule.suitKeys.includes(card.suit);
+          if(guess === "present") return present;
+          return !present;
+        }
+        return false;
+      }
+
+      function countWinningCards(rule, guess, deck){
+        let matches = 0;
+        for(const card of deck){
+          if(evaluate(rule, guess, card)) matches += 1;
+        }
+        return matches;
+      }
+
+      function removeCrossAndCount(x, y){
+        let removed = 0;
+        for(let i=0;i<GRID_SIZE;i++){
+          if(state.grid[y][i]){ state.grid[y][i] = null; removed += 1; }
+        }
+        for(let j=0;j<GRID_SIZE;j++){
+          if(j === y) continue;
+          if(state.grid[j][x]){ state.grid[j][x] = null; removed += 1; }
+        }
+        return removed;
+      }
+
+      function refreshTurnMeta(){
+        const p = state.players[state.currentPlayerIdx];
+        const name = p ? p.name : "-";
+        els.turnPlayer.textContent = "-> " + name;
+        els.streakInfo.textContent = "Reeks (" + name + "): " + state.turnPlacedStreak;
+        els.bonusInfo.textContent = "Uitdeel-slokken: " + state.bonusSips;
+        els.btnEndTurn.disabled = !(state.phase === "pick" && state.turnPlacedStreak >= 3);
+      }
+
+      function passTurnToNext(prefixMsg){
+        const p = state.players[state.currentPlayerIdx];
+        const nextIdx = (state.currentPlayerIdx + 1) % state.players.length;
+        state.currentPlayerIdx = nextIdx;
+        state.turnPlacedStreak = 0;
+        state.bonusSips = 0;
+        state.phase = "pick";
+        state.selected = null;
+        els.guessControls.innerHTML = "";
+        els.bonusDistributor.style.display = "none";
+        const next = state.players[state.currentPlayerIdx];
+        els.turnMsg.textContent = prefixMsg + " Nu is " + next.name + " aan de beurt.";
+        els.ruleInfo.textContent = "Nieuwe speler: kies een leeg vak naast een kaart.";
+        refreshTurnMeta();
+        renderGrid();
+        renderPlayers();
+      }
+
+      function readBonusDistribution(){
+        const inputs = els.bonusInputs.querySelectorAll("input[data-player-idx]");
+        const out = [];
+        let total = 0;
+        inputs.forEach((input) => {
+          const idx = Number(input.dataset.playerIdx);
+          const value = Math.max(0, Number(input.value) || 0);
+          total += value;
+          if(value > 0){
+            out.push({ idx, value });
+          }
+        });
+        return { out, total };
+      }
+
+      function updateBonusDistributionState(){
+        const bonus = state.bonusSips;
+        const parsed = readBonusDistribution();
+        const remaining = bonus - parsed.total;
+        els.bonusDistributeInfo.textContent = "Te verdelen: " + bonus + " slokken. Nog te verdelen: " + remaining + ".";
+        els.btnApplyBonus.disabled = (remaining !== 0);
+      }
+
+      function openBonusDistributor(){
+        const currentIdx = state.currentPlayerIdx;
+        const bonus = state.bonusSips;
+        els.bonusInputs.innerHTML = "";
+        state.phase = "distributeBonus";
+        for(let i=0;i<state.players.length;i++){
+          if(i === currentIdx) continue;
+          const p = state.players[i];
+          const row = document.createElement("div");
+          row.className = "player";
+          row.innerHTML = "<strong>" + p.name + "</strong>";
+          const input = document.createElement("input");
+          input.type = "number";
+          input.min = "0";
+          input.max = String(bonus);
+          input.step = "1";
+          input.value = "0";
+          input.dataset.playerIdx = String(i);
+          input.style.marginTop = "6px";
+          input.addEventListener("input", () => {
+            const n = Math.max(0, Math.floor(Number(input.value) || 0));
+            input.value = String(n);
+            updateBonusDistributionState();
+          });
+          row.appendChild(input);
+          els.bonusInputs.appendChild(row);
+        }
+        els.bonusDistributor.style.display = "block";
+        updateBonusDistributionState();
+        refreshTurnMeta();
+        renderGrid();
+      }
+
+      function renderGrid(){
+        els.grid.innerHTML = "";
+        for(let y=0;y<GRID_SIZE;y++){
+          for(let x=0;x<GRID_SIZE;x++){
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "cell";
+            btn.disabled = state.phase !== "pick";
+            if(selectableCell(x, y)) btn.classList.add("selectable");
+            if(state.selected && state.selected.x === x && state.selected.y === y) btn.classList.add("selected");
+            const c = cardAt(x, y);
+            if(c){
+              const inner = document.createElement("div");
+              inner.className = "card " + c.color;
+              inner.innerHTML = "<div>" + c.rank + "</div><div>" + c.suitSymbol + "</div>";
+              btn.appendChild(inner);
+            } else if(x === CENTER && y === CENTER){
+              btn.textContent = "+";
+            }
+            btn.addEventListener("click", () => onCellClick(x, y));
+            els.grid.appendChild(btn);
+          }
+        }
+      }
+
+      function renderPlayers(){
+        els.playersList.innerHTML = "";
+        state.players.forEach((p, idx) => {
+          const div = document.createElement("div");
+          div.className = "player" + (idx === state.currentPlayerIdx ? " current" : "");
+          div.innerHTML = "<strong>" + p.name + "</strong><div class='small'>Gedronken: " + p.drinks + "</div>";
+          els.playersList.appendChild(div);
+        });
+      }
+
+      function renderGuessButtons(rule){
+        els.guessControls.innerHTML = "";
+        const options = [];
+        if(rule.type === "color") options.push(["red","Rood","guess-red"],["black","Zwart","guess-black"]);
+        if(rule.type === "highlow") options.push(["higher","\u2191 Hoger","guess-up"],["lower","\u2193 Lager","guess-down"]);
+        if(rule.type === "between") options.push(["between","\u2194 Binnen","guess-in"],["outside","\u2922 Buiten","guess-out"]);
+        if(rule.type === "suitpresence") options.push(["present","Ligt al"],["absent","Ligt niet"]);
+        for(const opt of options){
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "guessBtn" + (opt[2] ? (" " + opt[2]) : "");
+          b.textContent = opt[1];
+          b.addEventListener("click", () => resolveGuess(opt[0], rule));
+          els.guessControls.appendChild(b);
+        }
+      }
+
+      function openDrawPopup(ok, sips, chanceText, card){
+        els.popupTitle.textContent = ok ? "Goed!" : "Fout!";
+        els.popupTitle.className = "resultTitle " + (ok ? "good" : "bad");
+        els.popupSips.textContent = "Slokken: " + sips;
+        els.popupChance.textContent = chanceText;
+        els.popupCard.className = "resultCard card " + card.color;
+        els.popupCard.innerHTML = "<div>" + card.rank + "</div><div>" + card.suitSymbol + "</div>";
+        els.drawPopup.style.display = "flex";
+      }
+
+      function closeDrawPopup(){
+        if(els.drawPopup.style.display !== "flex") return;
+        els.drawPopup.style.display = "none";
+        if(state.phase === "resultPause"){
+          state.phase = "pick";
+          refreshTurnMeta();
+          renderGrid();
+        }
+      }
+
+      function onCellClick(x, y){
+        if(state.phase !== "pick") return;
+        if(!selectableCell(x,y)) return;
+        state.selected = { x, y };
+        const rule = selectionRule(x, y);
+        els.ruleInfo.textContent = rule.text;
+        els.turnMsg.textContent = state.players[state.currentPlayerIdx].name + ": kies je gok.";
+        renderGuessButtons(rule);
+        renderGrid();
+      }
+
+      function resolveGuess(guess, rule){
+        if(!state.selected) return;
+        const deckBeforeDraw = state.deck.slice();
+        const drawn = nextCard();
+        if(!drawn){
+          els.turnMsg.textContent = "Deck is op. Klik op 'Nieuw deck' om verder te spelen.";
+          els.ruleInfo.textContent = "Je speelt verder op hetzelfde speelveld.";
+          state.selected = null;
+          els.guessControls.innerHTML = "";
+          state.phase = "pick";
+          refreshDeckInfo();
+          renderGrid();
+          return;
+        }
+        state.drawCard = drawn;
+        els.drawInfo.textContent = drawn.rank + " " + drawn.suitSymbol + " (" + (drawn.color === "red" ? "rood" : "zwart") + ")";
+        const ok = evaluate(rule, guess, drawn);
+        const p = state.players[state.currentPlayerIdx];
+        const x = state.selected.x, y = state.selected.y;
+        let drinkCount = 0;
+        const winningCards = countWinningCards(rule, guess, deckBeforeDraw);
+        const chancePct = deckBeforeDraw.length ? ((winningCards / deckBeforeDraw.length) * 100) : 0;
+        const chanceText = "Kans op goed: " + chancePct.toFixed(1).replace(/\.0$/, "") + "%";
+
+        if(ok){
+          state.grid[y][x] = drawn;
+          state.turnPlacedStreak += 1;
+          if(state.turnPlacedStreak > 3){
+            state.bonusSips += 2;
+          }
+          if(state.turnPlacedStreak >= 3){
+            els.turnMsg.textContent = "Goed! " + p.name + " heeft " + state.turnPlacedStreak + " op rij. Je mag beurt doorgeven of doorgaan.";
+          } else {
+            els.turnMsg.textContent = "Goed gegokt! Reeks: " + state.turnPlacedStreak + "/3.";
+          }
+        } else {
+          const removed = removeCrossAndCount(x, y);
+          drinkCount = removed + 1; // +1 voor de kaart die je probeerde neer te leggen
+          p.drinks += drinkCount;
+          els.turnMsg.textContent = "Fout! " + p.name + " drinkt " + drinkCount + " slokken (X/Y-as + de nieuwe kaart).";
+          state.turnPlacedStreak = 0;
+          state.bonusSips = 0;
+        }
+
+        state.selected = null;
+        state.phase = "resultPause";
+        els.ruleInfo.textContent = "Selecteer een leeg vak naast een kaart.";
+        els.guessControls.innerHTML = "";
+        els.bonusDistributor.style.display = "none";
+        refreshDeckInfo();
+        refreshTurnMeta();
+        renderGrid();
+        renderPlayers();
+        openDrawPopup(ok, drinkCount, chanceText, drawn);
+      }
+
+      function buildNameInputs(count){
+        els.nameFields.innerHTML = "";
+        for(let i=0;i<count;i++){
+          const wrap = document.createElement("div");
+          wrap.style.marginTop = "8px";
+          const label = document.createElement("label");
+          label.textContent = "Naam speler " + (i + 1);
+          const input = document.createElement("input");
+          input.type = "text";
+          input.id = "name_" + i;
+          input.value = ["Speler A","Speler B","Speler C","Speler D","Speler E","Speler F","Speler G","Speler H","Speler I","Speler J"][i];
+          wrap.appendChild(label);
+          wrap.appendChild(input);
+          els.nameFields.appendChild(wrap);
+        }
+      }
+
+      function readPlayers(count){
+        const out = [];
+        for(let i=0;i<count;i++){
+          const value = (document.getElementById("name_" + i)?.value || "").trim();
+          if(!value) throw new Error("Vul alle namen in.");
+          out.push({ name: value, drinks: 0 });
+        }
+        return out;
+      }
+
+      function startGame(players){
+        state.players = players;
+        state.currentPlayerIdx = 0;
+        state.grid = emptyGrid();
+        state.deck = makeDeck();
+        state.selected = null;
+        state.drawCard = null;
+        state.phase = "pick";
+        state.turnPlacedStreak = 0;
+        state.bonusSips = 0;
+        els.overlay.style.display = "none";
+        els.turnMsg.textContent = players[0].name + " begint. Kies een vak.";
+        els.ruleInfo.textContent = "Leeg veld: alleen midden is toegestaan.";
+        els.drawInfo.textContent = "-";
+        refreshDeckInfo();
+        els.guessControls.innerHTML = "";
+        els.bonusDistributor.style.display = "none";
+        refreshTurnMeta();
+        renderGrid();
+        renderPlayers();
+      }
+
+      function resetToSetup(){
+        state.phase = "setup";
+        els.overlay.style.display = "flex";
+      }
+
+      els.btnRestart.addEventListener("click", resetToSetup);
+      els.btnNewDeck.addEventListener("click", () => {
+        state.deck = makeDeck();
+        els.turnMsg.textContent = "Nieuw deck geladen. Speel verder.";
+        refreshDeckInfo();
+      });
+      els.btnEndTurn.addEventListener("click", () => {
+        if(state.phase !== "pick") return;
+        if(state.turnPlacedStreak < 3) return;
+        const p = state.players[state.currentPlayerIdx];
+        if(state.bonusSips > 0){
+          els.turnMsg.textContent = p.name + ": verdeel eerst je " + state.bonusSips + " uitdeel-slokken.";
+          openBonusDistributor();
+          return;
+        }
+        passTurnToNext(p.name + " geeft beurt door.");
+      });
+      els.btnCancelBonus.addEventListener("click", () => {
+        state.phase = "pick";
+        els.bonusDistributor.style.display = "none";
+        refreshTurnMeta();
+        renderGrid();
+      });
+      els.btnApplyBonus.addEventListener("click", () => {
+        if(state.phase !== "distributeBonus") return;
+        const parsed = readBonusDistribution();
+        if(parsed.total !== state.bonusSips) return;
+        const current = state.players[state.currentPlayerIdx];
+        const parts = [];
+        for(const item of parsed.out){
+          state.players[item.idx].drinks += item.value;
+          parts.push(state.players[item.idx].name + ": " + item.value);
+        }
+        const detail = parts.length ? (" Uitgedeeld -> " + parts.join(", ") + ".") : "";
+        passTurnToNext(current.name + " geeft beurt door." + detail);
+      });
+      els.playerCount.addEventListener("input", () => {
+        const n = Math.max(2, Math.min(10, Number(els.playerCount.value) || 2));
+        els.playerCountValue.textContent = String(n);
+        buildNameInputs(n);
+      });
+      els.btnStart.addEventListener("click", () => {
+        const n = Math.max(2, Math.min(10, Number(els.playerCount.value) || 2));
+        const players = readPlayers(n);
+        startGame(players);
+      });
+      els.drawPopup.addEventListener("click", closeDrawPopup);
+
+      (function init(){
+        const n = Number(els.playerCount.value) || 4;
+        els.playerCountValue.textContent = String(n);
+        buildNameInputs(n);
+        state.grid = emptyGrid();
+        renderGrid();
+      })();
+    </script>
+  </body>
+</html>
