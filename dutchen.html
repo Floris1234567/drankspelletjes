@@ -246,6 +246,15 @@
       </div>
     </div>
 
+    <!-- Pop-up modal voor feedback na elke gok in fase 1 -->
+    <div id="phase1Modal" style="display:none;position:fixed;z-index:200;inset:0;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);">
+      <div id="phase1ModalBox" style="background:var(--panel);border-radius:18px;padding:32px 28px;box-shadow:0 12px 32px rgba(0,0,0,.35);max-width:340px;width:90vw;text-align:center;transition:background 0.2s;">
+        <div id="phase1ModalTitle" style="font-size:2rem;font-weight:900;margin-bottom:12px;"></div>
+        <div id="phase1ModalText" style="font-size:1.2rem;margin-bottom:18px;"></div>
+        <div id="phase1ModalSips" style="font-size:3.2rem;font-weight:900;margin-bottom:18px;display:none;"></div>
+        <button id="phase1ModalCloseBtn" style="margin-top:8px;padding:10px 22px;font-size:1.1rem;font-weight:800;border-radius:12px;border:none;background:var(--accent);color:var(--panel);cursor:pointer;">OK</button>
+      </div>
+    </div>
     <script>
       const GRID_DECK_INFO = { suitKeys: ["hearts","diamonds","clubs","spades"] };
 
@@ -288,7 +297,13 @@
         busGridWrap: document.getElementById("busGridWrap"),
         busGuessControls: document.getElementById("busGuessControls"),
         busError: document.getElementById("busError"),
-        deckInfo: document.getElementById("deckInfo")
+        deckInfo: document.getElementById("deckInfo"),
+        phase1Modal: document.getElementById("phase1Modal"),
+        phase1ModalBox: document.getElementById("phase1ModalBox"),
+        phase1ModalTitle: document.getElementById("phase1ModalTitle"),
+        phase1ModalText: document.getElementById("phase1ModalText"),
+        phase1ModalSips: document.getElementById("phase1ModalSips"),
+        phase1ModalCloseBtn: document.getElementById("phase1ModalCloseBtn")
       };
 
       const state = {
@@ -646,6 +661,39 @@
         }
       }
 
+
+      // Toon alleen de visuele modal, geen alert()
+      function showPhase1Modal({ok, card, sips}) {
+        // card: {rankLabel, suitSymbol, color}
+        const kaartNaam = `${card.rankLabel} ${card.suitSymbol}`;
+        // Modal pas tonen na korte delay zodat kaart zichtbaar is
+        setTimeout(() => {
+          if(ok) {
+            els.phase1ModalTitle.textContent = "Goed zo!";
+            els.phase1ModalText.textContent = `Je trok ${kaartNaam}. Geen slokken!`;
+            els.phase1ModalSips.style.display = "none";
+            els.phase1ModalBox.style.background = "#2e7a34";
+            els.phase1ModalBox.style.border = "3px solid #8cffac";
+            els.phase1ModalTitle.style.color = "#8cffac";
+          } else {
+            els.phase1ModalTitle.textContent = "Helaas!";
+            els.phase1ModalText.textContent = `Je trok ${kaartNaam}. Je moet onderstaand aantal slokken nemen!`;
+            els.phase1ModalSips.textContent = `${sips}`;
+            els.phase1ModalSips.style.display = "block";
+            els.phase1ModalBox.style.background = "#c62d37";
+            els.phase1ModalBox.style.border = "3px solid #ffb5b5";
+            els.phase1ModalTitle.style.color = "#fff";
+          }
+          els.phase1Modal.style.display = "flex";
+        }, 350); // 350ms zodat kaart zichtbaar is
+      }
+
+      function hidePhase1Modal() {
+        els.phase1Modal.style.display = "none";
+      }
+
+      els.phase1ModalCloseBtn.addEventListener("click", hidePhase1Modal);
+
       function doPhase1GuessColor(guessColor){
         const p = state.players[state.activePlayerIdx];
         const drawn = drawCardOrWarn();
@@ -655,19 +703,21 @@
         renderCardTiny(els.lastDrawn, drawn, { down:false });
 
         const ok = (guessColor === drawn.color);
-        if(!ok) p.drinks += 1;
+        let sips = 0;
+        if(!ok) {
+          sips = 1;
+          p.drinks += 1;
+        }
         p.round1Cards = [drawn];
-        els.promptText.textContent = ok ? "Goed! Kaart 1 geplaatst." : "Fout! Je neemt 1 slok.";
         renderPlayers();
         deckInfo();
-        
-        // Show feedback with next button
-        els.phase1GuessControls.innerHTML = "";
-        const nextBtn = document.createElement("button");
-        nextBtn.type = "button";
-        nextBtn.textContent = "Volgende";
-        nextBtn.addEventListener("click", () => goNextQuestionOrPlayer());
-        els.phase1GuessControls.appendChild(nextBtn);
+        // Pop-up tonen
+        showPhase1Modal({ok, card: drawn, sips});
+        // Na sluiten modal: volgende speler/vraag
+        els.phase1ModalCloseBtn.onclick = () => {
+          hidePhase1Modal();
+          goNextQuestionOrPlayer();
+        };
       }
 
       function doPhase1GuessHighLow(guess){
@@ -679,20 +729,19 @@
         renderCardTiny(els.lastDrawn, drawn, { down:false });
 
         const ok = (guess === "higher") ? (drawn.rankValue > c1.rankValue) : (drawn.rankValue < c1.rankValue);
-        if(!ok) p.drinks += 1;
+        let sips = 0;
+        if(!ok) {
+          sips = 1;
+          p.drinks += 1;
+        }
         p.round1Cards.push(drawn);
-        
-        els.promptText.textContent = ok ? "Goed!" : "Fout! Je neemt 1 slok.";
         renderPlayers();
         deckInfo();
-        
-        // Show feedback with next button
-        els.phase1GuessControls.innerHTML = "";
-        const nextBtn = document.createElement("button");
-        nextBtn.type = "button";
-        nextBtn.textContent = "Volgende";
-        nextBtn.addEventListener("click", () => goNextQuestionOrPlayer());
-        els.phase1GuessControls.appendChild(nextBtn);
+        showPhase1Modal({ok, card: drawn, sips});
+        els.phase1ModalCloseBtn.onclick = () => {
+          hidePhase1Modal();
+          goNextQuestionOrPlayer();
+        };
       }
 
       function doPhase1GuessInsideOutside(guess){
@@ -708,20 +757,19 @@
 
         const inside = (drawn.rankValue >= min && drawn.rankValue <= max);
         const ok = (guess === "inside") ? inside : !inside;
-        if(!ok) p.drinks += 1;
+        let sips = 0;
+        if(!ok) {
+          sips = 1;
+          p.drinks += 1;
+        }
         p.round1Cards.push(drawn);
-        
-        els.promptText.textContent = ok ? "Goed!" : "Fout! Je neemt 1 slok.";
         renderPlayers();
         deckInfo();
-        
-        // Show feedback with next button
-        els.phase1GuessControls.innerHTML = "";
-        const nextBtn = document.createElement("button");
-        nextBtn.type = "button";
-        nextBtn.textContent = "Volgende";
-        nextBtn.addEventListener("click", () => goNextQuestionOrPlayer());
-        els.phase1GuessControls.appendChild(nextBtn);
+        showPhase1Modal({ok, card: drawn, sips});
+        els.phase1ModalCloseBtn.onclick = () => {
+          hidePhase1Modal();
+          goNextQuestionOrPlayer();
+        };
       }
 
       function doPhase1GuessSuitPresentAbsent(guess){
@@ -734,19 +782,19 @@
 
         const present = suits.includes(drawn.suit);
         const ok = (guess === "present") ? present : !present;
-        if(!ok) p.drinks += 1;
+        let sips = 0;
+        if(!ok) {
+          sips = 1;
+          p.drinks += 1;
+        }
         p.round1Cards.push(drawn);
-        els.promptText.textContent = ok ? "Goed! Kaart 4 is gezet." : "Fout! 1 slok.";
         renderPlayers();
         deckInfo();
-
-        // Show feedback with next button
-        els.phase1GuessControls.innerHTML = "";
-        const nextBtn = document.createElement("button");
-        nextBtn.type = "button";
-        nextBtn.textContent = "Volgende";
-        nextBtn.addEventListener("click", () => goNextQuestionOrPlayer());
-        els.phase1GuessControls.appendChild(nextBtn);
+        showPhase1Modal({ok, card: drawn, sips});
+        els.phase1ModalCloseBtn.onclick = () => {
+          hidePhase1Modal();
+          goNextQuestionOrPlayer();
+        };
       }
 
       function doPhase1GuessQuartet(){
@@ -763,26 +811,26 @@
         renderCardTiny(els.lastDrawn, drawn, { down:false });
 
         const absent = !suits.includes(drawn.suit);
+        let ok = false;
+        let sips = 0;
         if(!absent){
+          sips = 1;
           p.drinks += 1;
-          els.promptText.textContent = "Kwartet fout! Je neemt 1 slok.";
+          ok = false;
         } else {
           for(const pl of state.players){
             pl.drinks += 1;
           }
-          els.promptText.textContent = "Kwartet goed! Iedereen +1 slok.";
+          ok = true;
         }
         p.round1Cards.push(drawn);
         renderPlayers();
         deckInfo();
-        
-        // Show feedback with next button
-        els.phase1GuessControls.innerHTML = "";
-        const nextBtn = document.createElement("button");
-        nextBtn.type = "button";
-        nextBtn.textContent = "Volgende";
-        nextBtn.addEventListener("click", () => goNextQuestionOrPlayer());
-        els.phase1GuessControls.appendChild(nextBtn);
+        showPhase1Modal({ok, card: drawn, sips: ok ? state.players.length : sips});
+        els.phase1ModalCloseBtn.onclick = () => {
+          hidePhase1Modal();
+          goNextQuestionOrPlayer();
+        };
       }
 
       // --------------------------
@@ -1565,29 +1613,26 @@
         els.busGuessControls.appendChild(lowerBtn);
       }
 
+
       function busGuess(dir){
         const currentIdx = state.busStepIdx;
         const nextIdx = state.busStepIdx + 1;
-        
         // Check if we're already past the end
         if(currentIdx >= state.busGrid.length){
           return;
         }
-        
         // Current card must exist
         let currentCard = state.busGrid[currentIdx].card;
         if(!currentCard){
           els.busError.textContent = "Geen kaart om tegen te vergelijken!";
           return;
         }
-        
         // Draw a new card from the deck
         const drawnCard = nextCard();
         if(!drawnCard){
           // Deck is empty - show button to refill
           state.busPendingGuess = dir;
           els.busError.innerHTML = "<div style='padding: 12px; background: rgba(255,165,0,.2); border: 2px solid rgba(255,165,0,.5); border-radius: 8px; margin-bottom: 12px;'>Deck is op! Trek een nieuw deck.</div>";
-          
           els.busGuessControls.innerHTML = "";
           const newDeckBtn = document.createElement("button");
           newDeckBtn.type = "button";
@@ -1598,54 +1643,81 @@
           els.busGuessControls.appendChild(newDeckBtn);
           return;
         }
-        
         if(state.busStepIdx >= state.busCheckpointIdx){
           state.busReachedCheckpoint = true;
         }
-        
         // Check if guess is correct (comparing drawn card against current card)
         const ok = (dir === "higher") 
           ? (drawnCard.rankValue > currentCard.rankValue) 
           : (drawnCard.rankValue < currentCard.rankValue);
-        
+        // --- Alleen visuele feedback, geen alert() ---
+        let busMsg = "";
+        let sips = 0;
         if(ok){
-          // Correct! Place drawn card at current position, then move forward
+          busMsg = `Veilig! Je trok ${drawnCard.rankLabel}${drawnCard.suitSymbol}.`;
+        } else {
+          const baseIdx = state.busReachedCheckpoint ? state.busCheckpointIdx : 0;
+          sips = (currentIdx - baseIdx) + 1;
+          busMsg = `Niet veilig! Je trok ${drawnCard.rankLabel}${drawnCard.suitSymbol}. Je moet ${sips} slok${sips === 1 ? '' : 'ken'} nemen en terug naar het ${state.busReachedCheckpoint ? 'checkpoint' : 'begin'}.`;
+        }
+        // Modal pas tonen na korte delay zodat kaart zichtbaar is
+        setTimeout(() => {
+          // Gebruik een eenvoudige custom modal voor bus feedback
+          showBusModal({ok, drawnCard, sips, busMsg});
+        }, 350);
+        // --- EINDE FEEDBACK ---
+        if(ok){
           state.busGrid[currentIdx].card = drawnCard;
           state.busRevealedCards.add(currentIdx);
           state.busStepIdx = nextIdx;
-          
-          // Check if we've completed all positions
           if(state.busStepIdx >= state.busGrid.length){
             els.busMsg.textContent = "🎉 Je hebt alle kaarten geraden! Je bent de Bussen-kampioen!";
             els.busGuessControls.innerHTML = "";
             return;
           }
-          
           els.busError.textContent = "";
           renderBusGameplay();
           return;
         }
-        
-        // Wrong: place the card anyway and add drinks based on position from checkpoint/start
+        // Fout: kaart plaatsen, slokken toevoegen, terugzetten
         const busP = state.players[state.busWinnerIdx];
         state.busGrid[currentIdx].card = drawnCard;
         state.busRevealedCards.add(currentIdx);
-        // Count from checkpoint if reached, otherwise from start
         const baseIdx = state.busReachedCheckpoint ? state.busCheckpointIdx : 0;
         const failSipCount = (currentIdx - baseIdx) + 1;
         if(busP) busP.drinks += failSipCount;
-        
         const resetIdx = state.busReachedCheckpoint ? state.busCheckpointIdx : 0;
         state.busStepIdx = resetIdx;
-        
         const currentCardStr = currentCard.rankLabel + currentCard.suitSymbol;
         const drawnStr = drawnCard.rankLabel + drawnCard.suitSymbol;
-        
         els.busError.textContent = "❌ Fout! " + currentCardStr + " → je dacht " + (dir === "higher" ? "HOGER" : "LAGER") + " maar het was " + drawnStr + ". Je drinkt " + failSipCount + " sloken. Terug naar positie " + (resetIdx+1) + ".";
         renderPlayers();
         deckInfo();
         renderBusGameplay();
       }
+            // Custom modal voor bus feedback
+            function showBusModal({ok, drawnCard, sips, busMsg}) {
+              // Hergebruik de phase1Modal voor eenvoud (of maak eigen modal)
+              els.phase1ModalTitle.textContent = ok ? "Veilig!" : "Niet veilig!";
+              els.phase1ModalText.textContent = busMsg;
+              if(ok) {
+                els.phase1ModalSips.style.display = "none";
+                els.phase1ModalBox.style.background = "#2e7a34";
+                els.phase1ModalBox.style.border = "3px solid #8cffac";
+                els.phase1ModalTitle.style.color = "#8cffac";
+              } else {
+                els.phase1ModalSips.textContent = `${sips}`;
+                els.phase1ModalSips.style.display = "block";
+                els.phase1ModalBox.style.background = "#c62d37";
+                els.phase1ModalBox.style.border = "3px solid #ffb5b5";
+                els.phase1ModalTitle.style.color = "#fff";
+              }
+              els.phase1Modal.style.display = "flex";
+              // Sluitknop: sluit modal, geen extra logica nodig
+              els.phase1ModalCloseBtn.onclick = () => {
+                hidePhase1Modal();
+              };
+            }
       
       function refillDeck(){
         state.deck = makeDeck();

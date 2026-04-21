@@ -523,6 +523,15 @@
       </div>
     </div>
 
+    <!-- Modal voor goed/fout pop-up -->
+    <div id="resultModal" style="display:none;position:fixed;z-index:200;inset:0;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);">
+      <div id="modalBox" style="background:var(--panel);border-radius:18px;padding:32px 28px;box-shadow:0 12px 32px rgba(0,0,0,.35);max-width:340px;width:90vw;text-align:center;transition:background 0.2s;">
+        <div id="modalTitle" style="font-size:2rem;font-weight:900;margin-bottom:12px;"></div>
+        <div id="modalText" style="font-size:1.2rem;margin-bottom:18px;"></div>
+        <div id="modalSips" style="font-size:3.2rem;font-weight:900;margin-bottom:18px;display:none;"></div>
+        <button id="modalCloseBtn" style="margin-top:8px;padding:10px 22px;font-size:1.1rem;font-weight:800;border-radius:12px;border:none;background:var(--accent);color:var(--panel);cursor:pointer;">OK</button>
+      </div>
+    </div>
     <script>
       // =========================
       // Spelengine (eenmalig)
@@ -554,7 +563,13 @@
         btnGuessRed: document.getElementById("btnGuessRed"),
         btnGuessBlack: document.getElementById("btnGuessBlack"),
         resultBox: document.getElementById("resultBox"),
-        btnRestart: document.getElementById("btnRestart")
+        btnRestart: document.getElementById("btnRestart"),
+        resultModal: document.getElementById("resultModal"),
+        modalBox: document.getElementById("modalBox"),
+        modalTitle: document.getElementById("modalTitle"),
+        modalText: document.getElementById("modalText"),
+        modalSips: document.getElementById("modalSips"),
+        modalCloseBtn: document.getElementById("modalCloseBtn")
       };
 
       const state = {
@@ -930,38 +945,6 @@
             replaceSelectedCardWithRandom(key);
           }
 
-          if(isCorrect){
-            p.correctCount += 1;
-            // Pot stijgt additief: nieuwePot = huidigePot + kaartwaarde
-            const currentPot = state.pot;
-            state.pot = currentPot + value;
-
-            showResult({
-              type: "ok",
-              title: "Correct!",
-              detail:
-                "Kaart was " + actualColor.toUpperCase() + ". " +
-                p.name + " hoeft niets te drinken. Pot stijgt naar " + state.pot + "."
-            });
-            els.turnMessage.textContent = "Correct! Volgende speler kiest de volgende kaart.";
-          } else {
-            p.wrongCount += 1;
-            const currentPot = state.pot;
-            const drink = currentPot + value;
-            p.drankSlokken += drink;
-
-            state.pot = 0;
-
-            showResult({
-              type: "bad",
-              title: "Fout!",
-              detail:
-                "Kaart was " + actualColor.toUpperCase() + ". " +
-                p.name + " drinkt " + drink + " slokken. Pot wordt weer op 0 gezet."
-            });
-            els.turnMessage.textContent = "Fout! " + p.name + " kiest de volgende kaart.";
-          }
-
           // Reset selectie
           state.selectedKey = null;
           state.selectedCardColor = null;
@@ -971,10 +954,41 @@
           updatePlayersUI();
           renderWeb();
 
+          // MODAL LOGICA volgens nieuwe spelregels
+          const kaartNaam = `${actualColor.toUpperCase()} (${value} slok${value === 1 ? '' : 'ken'})`;
           if(isCorrect){
-            scheduleAdvanceTurn();
+            p.correctCount += 1;
+            state.pot += value;
+            els.modalTitle.textContent = "Goed zo!";
+            els.modalText.textContent = `De kaart was ${kaartNaam}. Er zitten nu ${state.pot} slokken in de pot.`;
+            els.modalSips.style.display = "none";
+            els.modalBox.style.background = "#2e7a34";
+            els.modalBox.style.border = "3px solid #8cffac";
+            els.modalTitle.style.color = "#8cffac";
+            els.resultModal.style.display = "flex";
+            els.modalCloseBtn.onclick = () => {
+              els.resultModal.style.display = "none";
+              els.turnMessage.textContent = "Correct! Volgende speler kiest de volgende kaart.";
+              scheduleAdvanceTurn();
+            };
           } else {
-            scheduleSamePlayerTurn();
+            p.wrongCount += 1;
+            const totaal = state.pot + value;
+            p.drankSlokken += totaal;
+            els.modalTitle.textContent = "Helaas!";
+            els.modalText.textContent = `De kaart was ${kaartNaam}. Je moet onderstaand aantal slokken nemen!`;
+            els.modalSips.textContent = `${totaal}`;
+            els.modalSips.style.display = "block";
+            els.modalBox.style.background = "#c62d37";
+            els.modalBox.style.border = "3px solid #ffb5b5";
+            els.modalTitle.style.color = "#fff";
+            els.resultModal.style.display = "flex";
+            els.modalCloseBtn.onclick = () => {
+              els.resultModal.style.display = "none";
+              els.turnMessage.textContent = `Fout! ${p.name} kiest de volgende kaart.`;
+              state.pot = 0;
+              scheduleSamePlayerTurn();
+            };
           }
         }, revealDelay);
       }
