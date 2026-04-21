@@ -1,4 +1,4 @@
-<!doctype html>
+3<!doctype html>
 <html lang="nl">
   <head>
     <meta charset="utf-8" />
@@ -6,70 +6,116 @@
     <title>Drankspel Hub</title>
     <style>
       :root{
-        --bg:#216225;
-        --panel:#2e7a34;
-        --text:#fff7ff;
-        --muted:#ffe3f4;
-        --accent:#fba9e0;
+        --bg: #c9a06a;
+        --panel: #3b4e4a;
+        --panel2: #7a5c2e;
+        --text: #fff7c0;
+        --muted: #ffe3f4;
+        --accent: #fba9e0;
+        --border: #2d2d2d;
+        --btn-spinnenweb: #c9a08a;
+        --btn-bussen: #6a8bbf;
+        --btn-muur: #bfc96a;
+        --btn-bac: #a08abf;
       }
       *{box-sizing:border-box}
       body{
         margin:0;
         font-family:"Trebuchet MS","Segoe UI",Tahoma,Arial,sans-serif;
         color:var(--text);
-        background:
-          radial-gradient(900px 550px at 10% 0%, rgba(251,169,224,.36), transparent 60%),
-          radial-gradient(1000px 600px at 90% 30%, rgba(255,255,255,.12), transparent 65%),
-          var(--bg);
+        background: var(--bg);
         min-height:100vh;
       }
       .wrap{
-        max-width:980px;
-        margin:0 auto;
-        padding:24px 16px 36px;
+        max-width:900px;
+        margin:32px auto 0 auto;
+        padding:0 16px 36px;
       }
       .hero{
-        background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
-        border:2px solid rgba(255,255,255,.25);
-        border-radius:22px;
-        padding:22px;
-        box-shadow:0 16px 32px rgba(0,0,0,.24);
+        background: #e2c28a;
+        border: 4px solid var(--border);
+        border-radius: 28px;
+        padding: 32px 28px 32px 28px;
+        box-shadow: 0 8px 32px rgba(0,0,0,.18);
       }
       h1{
-        margin:0;
-        font-size:clamp(30px,4.6vw,52px);
+        margin:0 0 18px 0;
+        font-size:54px;
         line-height:1;
+        text-align:center;
+        color:#ffe28a;
+        letter-spacing:2px;
+        font-family: 'Trebuchet MS', 'Segoe UI', Tahoma, Arial, sans-serif;
+        text-shadow: 2px 2px 0 #7a5c2e, 0 2px 8px #0008;
+        border-bottom: 4px solid #bfa05c;
+        border-radius: 0 0 18px 18px;
+        padding-bottom: 10px;
       }
       .subtitle{
-        margin:10px 0 0;
-        color:var(--muted);
+        margin:10px 0 24px 0;
+        color:#7a5c2e;
         font-weight:700;
+        text-align:center;
+        font-size:18px;
       }
       .games{
         margin-top:16px;
         display:grid;
-        grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-        gap:12px;
+        grid-template-columns:1fr 1fr;
+        gap:22px;
       }
       .game{
-        background:rgba(255,255,255,.14);
-        border:2px solid rgba(255,255,255,.3);
-        border-radius:18px;
-        padding:14px;
+        background: var(--panel);
+        border: 3px solid var(--border);
+        border-radius: 18px;
+        padding: 22px 18px 18px 18px;
+        box-shadow: 0 4px 18px rgba(0,0,0,.13);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        position: relative;
       }
-      .game h2{margin:0 0 8px;font-size:20px}
-      .game p{margin:0 0 12px;color:var(--muted);font-size:14px}
+      .game img {
+        width: 72px;
+        height: 72px;
+        display: block;
+        margin: 0 0 10px 0;
+        align-self: center;
+      }
+      .game h2{
+        margin:0 0 8px 0;
+        font-size: 26px;
+        color: #fff7c0;
+        text-shadow: 1px 1px 0 #0006;
+        font-family: inherit;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      .game p{
+        margin:0 0 18px 0;
+        color:#ffe3f4;
+        font-size:15px;
+        min-height:38px;
+        text-align:left;
+      }
       .btn{
         display:inline-block;
         text-decoration:none;
-        color:#1f1f1f;
+        color:#222;
         font-weight:900;
-        background:var(--accent);
-        border:2px solid rgba(255,255,255,.6);
+        border:2.5px solid #2226;
         border-radius:14px;
-        padding:10px 14px;
+        padding:12px 22px;
+        font-size:17px;
+        margin-top:8px;
+        box-shadow: 0 2px 8px #0002;
+        transition: filter .13s, box-shadow .13s;
       }
-      .btn:hover{filter:brightness(1.04)}
+      .btn-spinnenweb{background:var(--btn-spinnenweb);}
+      .btn-bussen{background:var(--btn-bussen);color:#fff;}
+      .btn-muur{background:var(--btn-muur);}
+      .btn-bac{background:var(--btn-bac);color:#fff;}
+      .btn:hover{filter:brightness(1.07);box-shadow:0 4px 16px #0003;}
     </style>
   </head>
   <body>
@@ -79,24 +125,28 @@
         <p class="subtitle">Kies je spel en start de gezelligheid.</p>
         <div class="games">
           <article class="game">
+            <img src="img/spinnenweb.png" alt="Spinnenweb icoon">
             <h2>Spinnenweb</h2>
             <p>Rood of zwart raden in het spinnenweb.</p>
-            <a class="btn" href="spinnenweb.html">Naar Spinnenweb</a>
+            <a class="btn btn-spinnenweb" href="spinnenweb.html">Naar Spinnenweb</a>
           </article>
           <article class="game">
+            <img src="img/bussen.png" alt="Bussen icoon">
+            <h2>Bussen</h2>
+            <p>Deze pagina is totat klaar voor je beunde volgende spel.</p>
+            <a class="btn btn-bussen" href="dutchen.html">Naar Bussen</a>
+          </article>
+          <article class="game">
+            <img src="img/chinese muur.png" alt="Chinese Muur icoon">
             <h2>Chinese Muur</h2>
             <p>Deze pagina staat klaar voor je volgende spel.</p>
-            <a class="btn" href="chinese-muur.html">Naar Chinese Muur</a>
+            <a class="btn btn-muur" href="chinese-muur.html">Naar Chinese Muur</a>
           </article>
           <article class="game">
-            <h2>Bussen</h2>
-            <p>Deze pagina staat klaar voor je volgende spel.</p>
-            <a class="btn" href="dutchen.html">Naar Dutchen</a>
-          </article>
-          <article class="game">
+            <img src="img/bac.png" alt="BAC Calc icoon">
             <h2>BAC Calc</h2>
             <p>Bereken je totale alcohol en een schatting van je BAC.</p>
-            <a class="btn" href="bac-calc.html">Naar BAC Calc</a>
+            <a class="btn btn-bac" href="bac-calc.html">Naar BAC Calc</a>
           </article>
         </div>
       </section>

@@ -26,11 +26,14 @@
       .wrap{max-width:1320px;margin:0 auto;padding:16px;}
       .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px;}
       .panel{
-        background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+        background: #2e7a34;
         border:2px solid rgba(255,255,255,.25);
         border-radius:18px;
         padding:12px;
         box-shadow:0 12px 26px var(--shadow);
+      }
+      .dialog {
+        background: #2e7a34;
       }
       .layout{display:grid;grid-template-columns:minmax(640px,1fr) 380px;gap:10px;}
       @media (max-width:1080px){.layout{grid-template-columns:1fr}}
@@ -135,7 +138,7 @@
       }
 
       .overlay{
-        position:fixed;inset:0;background:rgba(0,0,0,.55);
+          position: fixed; inset: 0; background: #2e7a34;
         display:flex;align-items:center;justify-content:center;padding:16px;z-index:40;
       }
       .dialog{
