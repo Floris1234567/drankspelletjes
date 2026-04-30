@@ -5,35 +5,36 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Spinnenweb - Drankspel</title>
     <style>
-      :root{
-        --bg:#216225;
-        --panel:#2e7a34;
-        --panel2:#2a6b2f;
-        --text:#fff6ff;
-        --muted:#ffe2f5;
-        --accent:#fba9e0;
-        --danger:#ff6aa3;
-        --ok:#b7ff6d;
-        --shadow: rgba(0,0,0,.28);
-        --cardW: 62px;
-        --cardH: 74px;
-        --radiusOuter: 220px;
-        --radiusMiddle: 160px;
-        --radiusInner: 100px;
+      .cardInner{
+        width: 100%;
+        height: 100%;
+        border-radius: 12px;
+        display:flex;
+        flex-direction: column;
+        align-items:center;
+        justify-content:center;
+        gap: clamp(2px, 0.18em, 8px);
+        padding: clamp(2px, 0.18em, 10px) clamp(2px, 0.14em, 8px);
+        font-size: clamp(10px, 2vw, 18px);
+        transform: rotate(var(--rot, 0deg));
+        transform-origin: 50% 50%;
       }
-      *{box-sizing:border-box}
-      body{
-        margin:0;
-        font-family: "Trebuchet MS", "Segoe UI", Tahoma, Arial, sans-serif;
-        background:
-          radial-gradient(800px 520px at 15% 0%, rgba(251,169,224,.35), transparent 60%),
-          radial-gradient(900px 620px at 90% 20%, rgba(255,255,255,.12), transparent 62%),
-          var(--bg);
-        color:var(--text);
+      .cardLabel{
+        font-weight: 900;
+        font-size: 1em;
+        letter-spacing: .4px;
+        color: rgba(255,255,255,.92);
+        text-shadow: 0 1px 0 rgba(0,0,0,.2);
       }
-      .wrap{
-        max-width: 1200px;
-        margin: 0 auto;
+      .cardValue{
+        font-size: 0.95em;
+        font-weight: 800;
+        color: rgba(255,255,255,.9);
+        background: rgba(0,0,0,.22);
+        border: 1px solid rgba(255,255,255,.16);
+        padding: 0.2em 0.7em;
+        border-radius: 999px;
+      }
         padding: 18px;
       }
       .topbar{
@@ -107,17 +108,36 @@
       }
       .gridContainer{
         display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        grid-template-rows: auto;
-        gap: 6px;
-        width: fit-content;
-        margin: 0 auto;
+        grid-template-columns: repeat(7, minmax(0,1fr));
+        gap: clamp(4px, 1vw, 12px);
+        width: 100%;
         max-width: 100%;
+        margin: 0 auto;
       }
       .gridCell{
-        width: 70px;
-        height: 80px;
+        width: 100%;
+        aspect-ratio: 7/8;
         position: relative;
+      }
+      .cardSlot{
+        width: 100%;
+        height: 100%;
+        min-width: 38px;
+        min-height: 44px;
+        max-width: clamp(38px, 12vw, 70px);
+        max-height: clamp(44px, 14vw, 80px);
+      }
+      @media (max-width: 700px) {
+        .cardSlot {
+          min-width: 32px;
+          min-height: 36px;
+        }
+      }
+      @media (max-width: 480px) {
+        .cardSlot {
+          min-width: 24px;
+          min-height: 28px;
+        }
       }
       .web{
         display: none;
@@ -471,7 +491,6 @@
 
         <div class="panel sidePanel">
           <h2>Spelers & Beurt</h2>
-          <div id="playersList" class="players"></div>
           <div class="status">
             <div class="row">
               <div class="label">Huidige speler</div>
@@ -490,6 +509,7 @@
 
             <div id="resultBox" class="resultFlash" style="display:none;"></div>
           </div>
+          <div id="playersList" class="players"></div>
         </div>
       </div>
     </div>
