@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Yahtzee Drankspel</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      body {
+        background: #4e9a57;
+        color: #222;
+        font-family: 'Trebuchet MS', 'Segoe UI', Tahoma, Arial, sans-serif;
+        margin: 0;
+        min-height: 100vh;
+      }
+      .yahtzee-container {
+        max-width: 420px;
+        margin: 0 auto;
+        padding: 18px 0 32px 0;
+        background: #4e9a57;
+        border-radius: 18px;
+        box-shadow: 0 4px 24px #0002;
+      }
+      .setup {
+        margin-bottom: 24px;
+        background: #fff7c0;
+        border-radius: 12px;
+        padding: 18px 16px 10px 16px;
+        box-shadow: 0 2px 8px #0001;
+      }
+      .setup label {
+        font-weight: bold;
+        margin-right: 8px;
+      }
+      .setup input[type="number"] {
+        width: 48px;
+        margin-right: 12px;
+      }
+      .setup input[type="text"] {
+        width: 110px;
+        margin-bottom: 6px;
+      }
+      .setup .players {
+        margin-top: 10px;
+      }
+      .hidden { display: none; }
+      .yahtzee-board {
+        background: #4e9a57;
+        border-radius: 12px;
+        padding: 0 0 18px 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .score-table {
+        margin: 0 auto 18px auto;
+        border-collapse: collapse;
+        background: #4e9a57;
+      }
+      .score-table th, .score-table td {
+        border: 1.5px solid #2226;
+        min-width: 38px;
+        height: 32px;
+        text-align: center;
+        background: #4e9a57;
+        color: #222;
+        font-size: 15px;
+      }
+      .score-table th {
+        background: #fff7c0;
+        color: #222;
+        font-size: 16px;
+      }
+      .score-table .cat {
+        background: #e2c28a;
+        font-weight: bold;
+        min-width: 80px;
+      }
+      .dice-row {
+        display: flex;
+        justify-content: center;
+        margin: 18px 0 10px 0;
+      }
+      .die {
+        width: 54px;
+        height: 54px;
+        background: #fba9e0;
+        border: 2.5px solid #2226;
+        border-radius: 10px;
+        margin: 0 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        cursor: pointer;
+        transition: filter .13s, box-shadow .13s;
+        box-shadow: 0 2px 8px #0002;
+        user-select: none;
+      }
+      .die.held {
+        background: #ffe3f4;
+        border: 2.5px solid #fba9e0;
+        filter: brightness(0.93);
+      }
+      .roll-btn {
+        display: block;
+        width: 90%;
+        margin: 0 auto 0 auto;
+        padding: 18px 0;
+        font-size: 28px;
+        background: #d8d8d8;
+        color: #222;
+        border: 2.5px solid #2226;
+        border-radius: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 2px 8px #0002;
+        transition: filter .13s, box-shadow .13s;
+      }
+      .roll-btn:disabled {
+        background: #bbb;
+        color: #888;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="yahtzee-container">
+      <div style="display:flex;justify-content:flex-start;margin-bottom:10px;">
+        <a href="home.html" style="background:#fff7c0;color:#222;padding:8px 18px;border-radius:12px;font-weight:bold;text-decoration:none;border:2px solid #e2c28a;box-shadow:0 2px 8px #0002;">Home</a>
+      </div>
+      <div class="setup" id="setup">
+        <label for="numPlayers">Aantal spelers:</label>
+        <input type="number" id="numPlayers" min="1" max="6" value="2" />
+        <button onclick="setupPlayers()">OK</button>
+        <div class="players hidden" id="playerInputs"></div>
+      </div>
+      <div class="yahtzee-board hidden" id="yahtzeeBoard">
+        <table class="score-table" id="scoreTable"></table>
+        <div class="dice-row" id="diceRow"></div>
+        <button class="roll-btn" id="rollBtn" onclick="rollDice()" style="display:none;">rollen</button>
+      </div>
+    </div>
+    <script src="yahtzee.js"></script>
+  </body>
+</html>
